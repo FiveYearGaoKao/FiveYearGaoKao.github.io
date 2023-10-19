@@ -267,6 +267,7 @@ function expandwYMountain(seq, fs, n = -1, debug = false) {    //展开序列
             root = idx[seq.length - 1 - bl]
             top1 = new Node(1, seq.length - 1, ord(n))
         } else {
+            idx[idx.length-1]=idx[idx.length-1].down
             root = nd.left    //根元素
             top1 = nd    //最上面的“顶元素”
         }
@@ -460,7 +461,7 @@ function expandwYMountain(seq, fs, n = -1, debug = false) {    //展开序列
                     if (iterate) {
                         xd.value = diagonal2[xd.x].value
                     } else {
-                        xd.value = idx[root.x + j + 1].value
+                        xd.value = idx[root.x + j + 1].value-(j==bl-1?1:0)
                     }
                     while (ordCmp(xd.y, [0]) > 0) {
                         xd.down.value = xd.value + xd.left.value
