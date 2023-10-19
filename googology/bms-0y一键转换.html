@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMS 0-Y Converter</title>
+</head>
+
+<body>
+    <h2>BMS 0-Y Converter Made By FiveYearGaoKao</h2>
+    Version:v0.1.0<br>
+    <textarea name="bms" id="B" style="width:45%;resize: none;" rows="30" placeholder="Input your BMS expressions here(extra 0 is allowed), each line for one expression.
+Example:(0)(1,1,1)(2,2)(3,2) or (0,0,0)(1,1,1)(2,2,0)(3,2,0)"></textarea>
+    <textarea name="0-Y" id="Y" style="width:45%;resize: none;" rows="30" placeholder="Input your 0-Y expressions here(numbers only), each line for one expression.
+Example:1,4,8,11"></textarea>
+    <br>
+    <button onclick="convert1()">BMS→0-Y</button>
+    <button onclick="convert2()">0-Y→BMS</button><br>
+    <p><i>WARNING: If you input ILLEGAL or NONSTANDARD expressions, you may get wrong answers!</i></p>
+</body>
+<script>
+    function convert1() {    //BMS to 0-Y
+        document.getElementById('Y').value = ''
+        var d = document.getElementById('B').value.split('\n')
+        for (let s of d) {
+            s = s.substring(1, s.length - 1).split(')(')
+            let l = s.length
+            let rows = 1
+            let parents = new Array(l)
+            for (let i = 0; i < l; i++) {    //Initialize
+                parents[i] = []
+                s[i] = s[i].split(',')
+                rows = Math.max(rows, s[i].length)
+            }
+            for (let i = 0; i < l; i++) {
+                for (let k = 0; k < rows; k++) {
+                    if (s[i].length <= k) {
+                        s[i].push(0)
+                    } else {
+                        s[i][k] = parseInt(s[i][k])
+                    }
+                }
+            }
+            for (let i = 0; i < rows; i++) {    // Calculate the parent
+                for (let j = 0; j < l; j++) {
+                    let k = j
+                    while (k >= 0 && s[k][i] >= s[j][i]) {
+                        if (i == 0) {
+                            k--
+                        } else {
+                            k = parents[k][i - 1]
+                        }
+                    }
+                    parents[j].push(k)
+                }
+            }
+            var res = Array(l).fill(1)
+            for (let i = rows - 1; i >= 0; i--) {    //Add from the last row
+                for (let j = 1; j < l; j++) {
+                    let k=parents[j][i]
+                    if (k >= 0) {
+                        res[j] = res[j] + res[k]
+                    }
+                }
+            }
+            document.getElementById('Y').value += (res + '\n')
+        }
+    }
+    function convert2() {    //0-Y to BMS
+        document.getElementById('B').value = ''
+        var d = document.getElementById('Y').value.split('\n')
+        for (let s of d) {
+            s = s.split(',')
+            let l = s.length
+            let rows = 0
+            let res = Array(l)
+            let parents = Array(l)
+            let resTest = ''
+            let x = true
+            for (let i = 0; i < l; i++) {    //Initialize the arrays
+                parents[i] = i - 1
+                s[i] = parseInt(s[i])
+                res[i] = []
+            }
+            while (x) {
+                let t = Array(l)
+                x = false
+                for (let i = 0; i < l; i++) {
+                    let k = i
+                    while (k >= 0 && s[k] >= s[i]) {    //Find the parent
+                        k = parents[k]
+                    }
+                    parents[i] = k
+                    if (k >= 0) {
+                        x = true
+                        t[i] = s[i] - s[k]
+                        res[i].push((res[k][rows] + 1))
+                    } else {
+                        t[i] = 1
+                        res[i].push(0)
+                    }
+                }
+                s = [...t]
+                rows++
+            }
+            for (let i = 0; i < l; i++) {
+                res[i].pop()
+                resTest += ('(' + res[i].join(',') + ')')
+            }
+            document.getElementById('B').value += (resTest + '\n')
+        }
+    }
+</script>
+
+</html>
