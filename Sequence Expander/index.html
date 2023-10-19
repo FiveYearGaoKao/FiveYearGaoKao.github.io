@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sequence Expander</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="smallY.js"></script>
+    <script src="wy.js"></script>
+    <script src="matrix.js"></script>
+    <script src="main.js"></script>
+</head>
+
+<body>
+    <h2>Sequence Expander</h2>
+    <textarea name="input" id="input" style="width:100%;resize: none;margin-bottom: 10px;" rows="4" placeholder="Input"
+        oninput="requestAnimationFrame(autoExpand)" contenteditable>1,4</textarea><br>
+    <textarea name="output" id="output" style="width:100%;resize: none;" rows="4" placeholder="Output" readonly></textarea><br>
+    FS Term<textarea id="fsterm" style="width:100px;resize: none;margin-bottom: -4px;" rows="1" placeholder="FS Term"
+        oninput="requestAnimationFrame(autoExpand)">3</textarea>
+    Mode<textarea id="mode" onchange="changeMode()" style="width:100px;resize: none;margin-bottom: -4px;" rows="1"
+        placeholder="Mode" oninput="requestAnimationFrame(autoExpand)">w</textarea>
+    Auto Expand<input type="checkbox" id="auto" value="auto" onchange="autoExpand()">
+    Log to the console<input type="checkbox" id="debug" value="debug">
+    <button id="expand1" onclick="expand()">Expand</button><br>
+    Mountain Style(only available for Y Sequence series)<form id="settings">
+        <label for="mt"><input type="radio" name="mt" value="0">No Mountain</label>
+        <label for="mt"><input type="radio" name="mt" value="1">Table Mountain</label>
+    </form><br>
+    <i>WARNING: If you input ILLEGAL or NONSTANDARD expressions, you may get wrong answers!</i><br>
+    <p>
+        "Inspired by <span id="sequenceName">???</span> by <span id="author">???</span>"<br>
+        Made by FiveYearGaoKao<br>
+        Version 0.2.3<br>
+    </p>
+    <p>
+    <details>
+        <summary>Here are some information for "Mode":</summary>
+        <ul id="help" style="display:block">
+            <li>"-5":The -5-Y Sequence Mode(It can't expand anything).</li>
+            <li>"-4":The -4-Y Sequence Mode(It can only expand sequences of "1"s, and the limit is ω).</li>
+            <li>"-3":The -3-Y Sequence Mode(k+1=k,1,1,1,..., and the limit is ω^2).</li>
+            <li>"-2":The -2-Y Sequence Mode(k+1=k,k,k,..., and the limit is ω^ω).</li>
+            <li>"-1":The -1-Y Sequence Mode(Also known as Address Notation, the limit is ε_0).</li>
+            <li>"P":The PrSS Mode(Primitive Sequence System, the limit is ε_0).</li>
+            <li>"L":The LPrSS Mode(Long PrSS, the limit is φ(ω,0)).</li>
+            <li>"H":The HPrSS Mode(Hyper PrSS, the limit is BO).</li>
+            <li>"IB":The IBMS Mode(BM3.3, the BMS "without upgrading", the limit is SHO).</li>
+            <li>"B":The BMS Mode(Bashicu Matrix System, the limit is SHO).</li>
+            <li>"0":The 0-Y Sequence Mode(The "linear version" of BMS, the limit is SHO).</li>
+            <!--<li>"C":The CMS Mode(Crane Matrix System).</li>-->
+            <li>"1":The Y Sequence Mode(The limit is SYO).</li>
+            <li>"n"(n is a positive integer):The Diagonalized n-Y Sequence Mode.(probably wrong)</li>
+            <!-- <li>"Cn"(n is a positive integer):The Consistent n-Y Sequence Mode.</li> -->
+            <li>"w":The Weak Magma ω-Y Sequence Mode(The limit is MHO).</li>
+        </ul>
+    </details>
+    </p>
+    <div id="test"></div>
+</body>
+
+</html>

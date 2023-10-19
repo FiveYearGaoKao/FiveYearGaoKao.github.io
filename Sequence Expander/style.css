@@ -1,0 +1,25 @@
+td.a{
+    border: 2px solid white;
+    background-color: #8434bd;
+    color: white;
+    width: 100px;
+    height: 20px;
+    text-align: center;
+}
+td.be{
+    border: 2px solid white;
+    background-color: #e9acff;
+    width: 75px;
+    height: 20px;
+    text-align: center;
+}
+td.bo{
+    border: 2px solid white;
+    background-color: #cb5cff;
+    width: 75px;
+    height: 20px;
+    text-align: center;
+}
+table{
+    border-collapse: collapse;
+}
