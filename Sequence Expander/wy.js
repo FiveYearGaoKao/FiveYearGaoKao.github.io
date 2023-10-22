@@ -488,7 +488,60 @@ function expandwYMountain(seq, fs, n = -1, debug = false) {    //展开序列
         return mt2
     }
 }
-function expandwY(seq, fs, n = -1,debug=false) {
+function expandwY(seq, fs, n = -1) {
+    debug=document.getElementById('debug').checked
     let mt = generateMountain(seq)
     return expandwYMountain(mt, fs, n, debug).map((x) => x.value)
 }
+notations.push(
+    {
+        'name': (_) => { return '0-Y Sequence' },
+        'author': 'Yukito',
+        'mode': (mode) => { return mode == '0' },
+        'description': '"0":The 0-Y Sequence Mode(The "linear version" of BMS, the limit is SHO).',
+        'expand': (seq, fs, _) => {
+            seq = seq.split(',').map((x) => parseInt(x) > 0 ? parseInt(x) : 1)
+            return expandwY(seq,fs,0).join(',')
+        },
+        'limit':(fs,_)=>{showMountain(drawMountain(generateMountain([1,fs+1])));return '1,'+(fs+1).toString()}
+    }
+)
+notations.push(
+    {
+        'name': (_) => { return 'Y Sequence' },
+        'author': 'Yukito',
+        'mode': (mode) => { return mode == '1' },
+        'description': '"1":The Y Sequence Mode(The limit is SYO).',
+        'expand': (seq, fs, _) => {
+            seq = seq.split(',').map((x) => parseInt(x) > 0 ? parseInt(x) : 1)
+            return expandwY(seq,fs,1).join(',')
+        },
+        'limit':(fs,_)=>{showMountain(drawMountain(generateMountain([1,fs+1])));return '1,'+(fs+1).toString()}
+    }
+)
+notations.push(
+    {
+        'name': (mode) => { return 'D '+parseInt(mode).toString()+'-Y Sequence' },
+        'author': 'Gomen520',
+        'mode': (mode) => { return (parseInt(mode)>=2) },
+        'description': '"n"(n is a positive integer):The Diagonalized n-Y Sequence Mode.(probably wrong)',
+        'expand': (seq, fs, mode) => {
+            seq = seq.split(',').map((x) => parseInt(x) > 0 ? parseInt(x) : 1)
+            return expandwY(seq,fs,parseInt(mode)).join(',')
+        },
+        'limit':(fs,_)=>{showMountain(drawMountain(generateMountain([1,fs+1])));return '1,'+(fs+1).toString()}
+    }
+)
+notations.push(
+    {
+        'name': (_) => { return 'ω-Y Sequence' },
+        'author': 'Yukito',
+        'mode': (mode) => { return mode == 'w' },
+        'description': '"w":The Weak Magma ω-Y Sequence Mode(The limit is MHO).',
+        'expand': (seq, fs, _) => {
+            seq = seq.split(',').map((x) => parseInt(x) > 0 ? parseInt(x) : 1)
+            return expandwY(seq,fs,-1).join(',')
+        },
+        'limit':(fs,_)=>{showMountain(drawMountain(generateMountain([1,fs+1])));return '1,'+(fs+1).toString()}
+    }
+)

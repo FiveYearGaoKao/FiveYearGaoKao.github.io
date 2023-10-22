@@ -1,9 +1,18 @@
+/* 一个记号的格式:
+    name:记号名称(以mode为参数函数,返回字符串)
+    author:记号作者(字符串)
+    mode:模式判断(以mode(字符串)为参数的函数,返回bool)
+    description:记号简介(字符串)
+    expand:展开方式(以seq(字符串),fs(正整数),mode(字符串)为参数的函数,返回字符串)(展开时，允许向"test"中输出山脉图等信息或者向控制台输出展开过程)
+    limit:表示法极限的展开方式(以fs(正整数),mode(字符串)为参数的函数,返回字符串)
+ */
 mode1 = ''
+notations = []
 function changeSeqInfo(name, author) {    //修改序列信息
     document.getElementById('sequenceName').innerText = name
     document.getElementById('author').innerText = author
 }
-function showOutput(seq,debug=false) {    //输出
+function showOutput(seq, debug = false) {    //输出
     if (debug) {
         console.log(seq)
     }
@@ -11,116 +20,51 @@ function showOutput(seq,debug=false) {    //输出
 }
 function changeMode() {    //切换模式
     mode1 = document.getElementById('mode').value
-    switch (mode1) {
-        case "-5":
-            changeSeqInfo('-5-Y Sequence', 'Nobody')
-            break;
-        case "-4":
-            changeSeqInfo('-4-Y Sequence', 'Someone')
-            break;
-        case "-3":
-            changeSeqInfo('-3-Y Sequence', 'Someone')
-            break;
-        case "-2":
-            changeSeqInfo('-2-Y Sequence', 'Someone')
-            break;
-        case "-1":
-            changeSeqInfo('Address Notation', 'Someone')
-            break;
-        case "P":
-            changeSeqInfo('Primitive Sequence System', 'Bashicu')
-            break;
-        case "L":
-            changeSeqInfo('Long Primitive Sequence System', 'Someone')
-            break;
-        case "H":
-            changeSeqInfo('Hyper Primitive Sequence System', 'Bashicu')
-            break;
-        case "B":
-            changeSeqInfo('Bashicu Matrix System 4', 'Bashicu')
-            break;
-        case "IB":
-            changeSeqInfo('Bashicu Matrix System 3.3', 'Bashicu')
-            break;
-        case "0":
-            changeSeqInfo('0-Y Sequence', 'Yukito')
-            break;
-        case "1":
-            changeSeqInfo('Y Sequence', 'Yukito')
-            break;
-        case "w":
-            changeSeqInfo('ω-Y Sequence (weak magma)', 'Yukito')
-            break;
-        default:
-            if (parseInt(mode1) > 0) {
-                changeSeqInfo('D ' + parseInt(mode1).toString() + '-Y Sequence (weak magma)', 'Gomen520(?)')
-                break
-            }
-            changeSeqInfo("???", "???")
-            break;
+    let match = false
+    let i = 0
+    while (i < notations.length) {
+        if (notations[i].mode(mode1)) {
+            changeSeqInfo(notations[i].name(mode1), notations[i].author)
+            match = true
+            return i
+        }
+        ++i
     }
+    changeSeqInfo('???', '???')
+    return -1
 }
 function expand() {    //真正的展开
-    debug=document.getElementById('debug').checked
+    debug = document.getElementById('debug').checked
     document.getElementById('test').innerHTML = ''
-    mode1 = document.getElementById('mode').value
-    if (mode1 == "B" || mode1 == "IB") {
-        seq = readMatrix(document.getElementById('input').value)
-    } else {
-        seq = document.getElementById('input').value.split(',').map((x) => parseInt(x) > 0 ? parseInt(x) : 1)
-    }
+    seq = document.getElementById('input').value
     fs = parseInt(document.getElementById('fsterm').value)
-    switch (mode1) {
-        case "-5":
-            showOutput(expandSmallY(seq, fs, -5),debug)
-            break;
-        case "-4":
-            showOutput(expandSmallY(seq, fs, -4),debug)
-            break;
-        case "-3":
-            showOutput(expandSmallY(seq, fs, -3),debug)
-            break;
-        case "-2":
-            showOutput(expandSmallY(seq, fs, -2),debug)
-            break;
-        case "-1":
-            showOutput(expandPrSS(seq, fs, false),debug)
-            break;
-        case "P":
-            showOutput(expandPrSS(seq, fs, false),debug)
-            break;
-        case "L":
-            showOutput(expandPrSS(seq, fs, true),debug)
-            break;
-        case "H":
-            showOutput(expandHPrSS(seq, fs),debug)
-            break;
-        case "B":
-            document.getElementById('output').value = writeMatrix(expandBMS(seq, fs, false))
-            break;
-        case "IB":
-            document.getElementById('output').value = writeMatrix(expandBMS(seq, fs, true))
-            break;
-        case "w":
-            showOutput(expandwY(seq, fs, -1,debug),debug)
-            break;
-        default:
-            if (parseInt(mode1) >= 0) {
-                let n = parseInt(mode1)
-                showOutput(expandwY(seq, fs, n,debug),debug)
-                break
-            }
-            showOutput([-1])
-            break;
+    mode1 = document.getElementById('mode').value
+    let i = changeMode()
+    if (i >= 0) {
+        if (seq == 'limit') {
+            document.getElementById('output').value = notations[i].limit(fs, mode1)
+        } else {
+            document.getElementById('output').value = notations[i].expand(seq, fs, mode1)
+        }
+    } else {
+        document.getElementById('output').value = '-1'
     }
-    return
 }
 function autoExpand() {
     if (document.getElementById('auto').checked) {
         setTimeout(expand, 10)
     }
 }
+function swap() {
+    tmp = document.getElementById('input').value
+    document.getElementById('input').value = document.getElementById('output').value
+    document.getElementById('output').value = tmp
+    autoExpand()
+}
 window.onload = () => {
+    for (let i = 0; i < notations.length; ++i) {
+        document.getElementById('help').innerHTML += '<li>' + notations[i].description + '</li>\n'
+    }
     document.forms['settings']['mt'].value = '1'
     document.getElementById('auto').checked = true
     document.getElementById('debug').checked = false

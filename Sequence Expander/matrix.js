@@ -86,3 +86,29 @@ function expandBMS(s,fs,idealized=false){    //展开BMS
 function expandCMS(s,fs){    //展开CMS
     //不会
 }
+notations.push(
+    {
+        'name': (_) => { return 'Bashicu Matrix System 4' },
+        'author': 'Bashicu',
+        'mode': (mode) => { return mode == 'B' },
+        'description': '"B":The BMS Mode(Bashicu Matrix System, the limit is SHO).',
+        'expand': (seq, fs, _) => {
+            seq = readMatrix(seq)
+            return writeMatrix(expandBMS(seq,fs,false))
+        },
+        'limit':(fs,_)=>{return writeMatrix([new Array(fs+1).fill(0),new Array(fs+1).fill(1)])}
+    }
+)
+notations.push(
+    {
+        'name': (_) => { return 'Bashicu Matrix System 3.3' },
+        'author': 'Bashicu',
+        'mode': (mode) => { return mode == 'IB' },
+        'description': '"IB":The IBMS Mode(BM3.3, the BMS "without upgrading", the limit is SHO).',
+        'expand': (seq, fs, _) => {
+            seq = readMatrix(seq)
+            return writeMatrix(expandBMS(seq,fs,true))
+        },
+        'limit':(fs,_)=>{return writeMatrix([new Array(fs+1).fill(0),new Array(fs+1).fill(1)])}
+    }
+)
