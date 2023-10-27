@@ -65,7 +65,7 @@ function copyHydra(hydra) {    //复制Hydra
 }
 function copyLifting(hydra, delta = 0, lb = 0) {    //带提升的复制
     //LPrSS Hydra中某一项提升当且仅当它大于坏根且从坏根到它的路上没有比坏根小的数
-    return [hydra[0]+delta*(hydra[0]>=lb?1:0)].concat(hydra.slice(1).map((x)=>{return copyLifting(x,(x[0]>lb?1:0),lb)}))
+    return [hydra[0]+delta*(hydra[0]>=lb?1:0)].concat(hydra.slice(1).map((x)=>{return copyLifting(x,(x[0]>lb?delta:0),lb)}))
 }
 function findTop2(h) {
     let a = h
