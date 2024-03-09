@@ -32,6 +32,9 @@ function ordMinus(ord1, ord2) {    //两个w进制数字的减法(ord1-ord2)
     }
     return res
 }
+function ordMult(ord1, n) {    //一个w进制数字ord乘以w^n
+    return new Array(n).fill(0).concat(ord1)
+}
 function ordCmp(ord1, ord2) {    //两个w进制数字比大小
     if (ord1.length > ord2.length) {
         return 1
@@ -94,12 +97,14 @@ function connect(mt2, newNode, cd, tops, roots, i) {    //作出新边时的一�
     }
     tops[i] = newNode
 }
-function magma(node) {    //从一个节点开始，递归地作magma边
-    for (let i = 0; i < node.right.length; ++i) {
-        let nd = node.right[i].down
+function magma(node,mag) {    //从一个节点开始，递归地作magma边
+    let isStrong=(mag==4||(mag==3&&(node.y[0]>0||(ordCmp(node.y,[0])==0))))&&(node.y[0]!=-1)
+    let source=isStrong?node.down:node
+    for (let i = 0; i < source.right.length; ++i) {
+        let nd = isStrong?source.right[i]:source.right[i].down
         if (nd != null && ordCmp(nd.y, node.y) == 0) {
             nd.isMagma = true
-            magma(nd)
+            magma(nd,mag)
         }
     }
 }
@@ -136,12 +141,16 @@ function copyMountain(seq) {    //复制一份基础山脉
     }
     return mt
 }
-function drawMountain(seq, n = -1) {    //画山脉图
+function drawMountain(seq, n = -1, consistent = false) {    //画山脉图
     mt = copyMountain(seq)
     for (let i = 0; i < seq.length; ++i) {
         let nd1 = mt[i]
         while (true) {
             let parent = nd1
+            if (nd1.left == null) {
+                break
+            }
+            let flag = false
             while (parent != null && parent.value >= nd1.value) {
                 parent = parent.left
                 while (parent != null && parent.up != null && (ordCmp(parent.up.y, nd1.y) <= 0)) {
@@ -149,26 +158,38 @@ function drawMountain(seq, n = -1) {    //画山脉图
                 }
             }
             if (parent == null) {
-                break
-            } else {
-                let dy = ordMinus(nd1.y, parent.y).length
-                if (n >= 0) {
-                    dy = Math.min(dy, n)
-                    if (n != 0 && dy >= n) {
-                        break
-                    }
+                if (consistent) {
+                    flag = true
+                    parent = nd1.left
                 }
-                let newy = ordPlus(nd1.y, ord(dy))
-                let newNode = new Node(nd1.value - parent.value, i, newy)
-                connectH(parent, newNode)
-                connectV(newNode, nd1)
-                nd1 = newNode
+                else { break }
             }
+            let dy = ordMinus(nd1.y, parent.y).length
+            if (dy >= 1) {
+                flag = true
+            }
+            if (n >= 0) {
+                dy = Math.min(dy, n)
+                if (n != 0 && dy >= n) {
+                    break
+                }
+            }
+            let newy = ordPlus(nd1.y, ord(dy))
+            let newValue = nd1.value - parent.value
+            if (consistent && flag) {
+                newValue = nd1.value
+                parent = findNode(nd1.left, newy, false)
+            }
+            let newNode = new Node(newValue, i, newy)
+            connectH(parent, newNode)
+            connectV(newNode, nd1)
+            nd1 = newNode
+
         }
     }
     return mt
 }
-function displayMountain(mt, debug = false) {    //可视化山脉
+function displayMountain(mt, data) {    //可视化山脉
     let row = [0]
     let realRow = 0
     let running = true
@@ -216,7 +237,7 @@ function displayMountain(mt, debug = false) {    //可视化山脉
                 html += ("<td class='b" + (realRow % 2 == 0 ? 'e' : 'o') + "'>" + (val[j] == 0 ? '' : val[j].toString()) + "</td>\n")
             }
             html += "<tr>\n"
-            if (debug) {
+            if (data.debug) {
                 console.log(res)
             }
         }
@@ -225,29 +246,33 @@ function displayMountain(mt, debug = false) {    //可视化山脉
     html += '</table>'
     return html
 }
-function showMountain(mt, debug = false) {
-    if (document.forms['settings']['mt'].value == '1') {
-        document.getElementById('test').innerHTML += (displayMountain(mt, debug) + '\n<br>\n')
+function showMountain(mt, data) {
+    if (data.display) {
+        document.getElementById('test').innerHTML += (displayMountain(mt, data) + '\n<br>\n')
     }
 }
-function expandwYMountain(seq, fs, n = -1, debug = false) {    //展开序列
+function expandwYMountain(seq, fs, n = -1, data, consistent = false) {    //展开序列,n=-1按w-Y展开,n=-2按???-Y展开
     let version = 0
-    let mt1 = drawMountain(seq, n)
+    let mt1 = drawMountain(seq, n, consistent)
     let mt2
-    showMountain(mt1, debug)
-    if (seq[seq.length - 1].value <= 1) {
+    showMountain(mt1, data)
+    if ((seq[seq.length - 1].value <= 1)||fs<=0) {    //末项是1的平凡情况
         seq.pop()
         mt2 = drawMountain(seq, n)
-        showMountain(mt2, debug)
+        showMountain(mt2, data)
         return seq
     } else {
         seq[seq.length - 1].value -= 1
-        mt2 = drawMountain(seq, n)
+        mt2 = drawMountain(seq, n, consistent)
         let nd = mt1[seq.length - 1]
         let idx = new Array(seq.length)
         let iterate = false
         let diagonal
         let diagonal2
+        let top1
+        let hyperEruption = false    //对于???-Y,判断是否超维提升
+        let HEArray = []
+        let HElength = 0
         for (let i = 0; i < seq.length; ++i) {
             nd = mt1[i]
             while (nd.up != null) {
@@ -255,31 +280,31 @@ function expandwYMountain(seq, fs, n = -1, debug = false) {    //展开序列
             }
             idx[i] = nd
         }
-        if (n > 0) {
+        if (n > 0) {    //n-Y提取山脉
             diagonal = copyMountain(idx)
             if (idx[idx.length - 1].value > 1) {
                 iterate = true
-                diagonal2 = expandwYMountain(diagonal, fs, n)
+                diagonal2 = expandwYMountain(diagonal, fs, n, data, consistent)
             }
         }
         if (iterate) {
-            bl = Math.round((diagonal2.length - seq.length) / fs)
+            bl = Math.round((diagonal2.length - seq.length + 1) / fs)
             root = idx[seq.length - 1 - bl]
             top1 = new Node(1, seq.length - 1, ord(n))
         } else {
-            let xd=mt2[idx.length-1]
-            while(xd.up!=null){
-                xd=xd.up
+            let xd = mt2[idx.length - 1]
+            while (xd.up != null) {
+                xd = xd.up
             }
-            idx[idx.length-1]=xd
+            idx[idx.length - 1] = xd
             root = nd.left    //根元素
             top1 = nd    //最上面的“顶元素”
         }
         bl = seq.length - 1 - root.x    //复制部分长度
-        rc = []   //根列元素
+        let rc = []   //根列元素
         nd = mt2[root.x].down
-        while (nd != null && ordCmp(root.y, nd.y) >= 0) {
-            magma(nd)
+        while (nd != null && ordCmp(root.y, nd.y) >= 0) {    //作出magma元素并标记根列
+            magma(nd,data.magma)
             rc.push(nd)
             if (nd.up == null) {
                 break
@@ -287,6 +312,20 @@ function expandwYMountain(seq, fs, n = -1, debug = false) {    //展开序列
             nd = nd.up
         }
         rc.push(top1)
+        if (n == -2) {    //超维提升(目前不可用)
+            let delta = top1.y.length - top1.left.y.length
+            if (delta > 0) {
+                hyperEruption = true
+                HEArray.unshift(top1.y.length)
+                let xx = top1
+                while (xx.y.length > 1) {
+                    xx = xx.left
+                    HEArray.unshift(xx.y.length)
+                }
+                HElength = HEArray.length
+                HEArray = expandwY(HEArray, fs, -1)
+            }
+        }
         for (let i = 0; i < fs; ++i) {    //基本列递增
             dis = (i + 1) * bl    //本次“平移”的距离
             let nd = mt2[mt2.length - 1].down
@@ -302,7 +341,7 @@ function expandwYMountain(seq, fs, n = -1, debug = false) {    //展开序列
                         break
                     }
                     yr = rc[ir].y
-                    nyr = ordPlus(rc[ir - 1].y, ord(n))
+                    //nyr = ordPlus(rc[ir - 1].y, ord(n))
                 }
                 nd = nd.up
             }
@@ -391,6 +430,7 @@ function expandwYMountain(seq, fs, n = -1, debug = false) {    //展开序列
                 }
             } else {    //尊重原著
                 for (let j = 0; j < bl; ++j) {    //对于复制部分的每一列，进行操作
+                    if(i==fs-1&&j==bl-1)break
                     let nd = mt2[root.x + j + 1]
                     let ir = 0
                     let thisRc = rc[ir]
@@ -410,13 +450,13 @@ function expandwYMountain(seq, fs, n = -1, debug = false) {    //展开序列
                             if (ordCmp(newRight.y, [0]) == 0) {
                                 mt2[nd.x + dis] = newRight
                             }
-                            if (debug) {
+                            if (data.debug) {
                                 console.log('wilefire')
-                                displayMountain(mt2, debug)
+                                displayMountain(mt2, data)
                             }
-                            if (nd.up != null) {    //作出magma边
-                                let thisNode = nd.up.left
-                                let newLeft = findNode(mt2[thisNode.x + dis], thisNode.y)
+                            {    //作出magma边
+                                let thisNode = (data.magma==1||n==1)?nd.up.left:nd.left
+                                let newLeft = findNode(mt2[thisNode.x + dis], nd.y)
                                 while (newLeft.up != null && ordCmp(newLeft.y, thisRef.y) < 0) {
                                     let dy = ordMinus(newLeft.up.y, newLeft.y).length
                                     for (let k = 0; k < dy; ++k) {
@@ -427,9 +467,9 @@ function expandwYMountain(seq, fs, n = -1, debug = false) {    //展开序列
                                         if (ordCmp(newRight.y, [0]) == 0) {
                                             mt2[nd.x + dis] = newRight
                                         }
-                                        if (debug) {
+                                        if (data.debug) {
                                             console.log('magma')
-                                            displayMountain(mt2, debug)
+                                            displayMountain(mt2, data)
                                         }
                                     }
                                     newLeft = newLeft.up
@@ -450,9 +490,9 @@ function expandwYMountain(seq, fs, n = -1, debug = false) {    //展开序列
                             if (ordCmp(newRight.y, [0]) == 0) {
                                 mt2[nd.x + dis] = newRight
                             }
-                            if (debug) {
+                            if (data.debug) {
                                 console.log('eruption')
-                                displayMountain(mt2, debug)
+                                displayMountain(mt2, data)
                             }
                         }
                         if (nd.up == null) {
@@ -468,80 +508,100 @@ function expandwYMountain(seq, fs, n = -1, debug = false) {    //展开序列
                         xd.value = idx[root.x + j + 1].value
                     }
                     while (ordCmp(xd.y, [0]) > 0) {
-                        xd.down.value = xd.value + xd.left.value
+                        xd.down.value = (consistent && xd.y[0] == 0) ? xd.value : (xd.value + xd.left.value)
                         xd = xd.down
                     }
-                    if (debug) {
+                    if (data.debug) {
                         console.log('fill')
-                        displayMountain(mt2, debug)
+                        displayMountain(mt2, data)
                     }
                 }
             }
         }
-        if (debug) {
+        mt2.pop()
+        if (data.display) {
             console.log('end')
             console.log(mt2)
         }
-        if (document.forms['settings']['mt'].value == '1') {
-            document.getElementById('test').innerHTML += ('\n<br>\n' + displayMountain(mt2))
-        }
+        showMountain(mt2, data)
         return mt2
     }
 }
-function expandwY(seq, fs, n = -1) {
-    debug=document.getElementById('debug').checked
+function expandwY(seq, fs, n = -1, data, consistent = false) {
     let mt = generateMountain(seq)
-    return expandwYMountain(mt, fs, n, debug).map((x) => x.value)
+    return expandwYMountain(mt, fs, n, data, consistent).map((x) => x.value)
 }
 notations.push(
     {
-        'name': (_) => { return '0-Y Sequence' },
-        'author': 'Yukito',
-        'mode': (mode) => { return mode == '0' },
-        'description': '"0":The 0-Y Sequence Mode(The "linear version" of BMS, the limit is SHO).',
-        'expand': (seq, fs, _) => {
-            seq = seq.split(',').map((x) => parseInt(x) > 0 ? parseInt(x) : 1)
-            return expandwY(seq,fs,0).join(',')
-        },
-        'limit':(fs,_)=>{showMountain(drawMountain(generateMountain([1,fs+1])));return '1,'+(fs+1).toString()}
+        name: '0-Y Sequence',
+        author: 'Yukito',
+        abbr:'0Y',
+        description: '"0Y":The 0-Y Sequence Mode(The "linear version" of BMS, the limit is SHO).',
+        expand(a, fs, data) { return expandwY(a, fs, 0, data) },
+        expandLimit(fs,data) { showMountain(drawMountain(generateMountain([1, fs + 1])),data); return [1, fs + 1] },
+        data: {
+            display: ['checkbox', 'Show mountain', true],
+            debug: ['checkbox', 'Log to the console', false],
+        }
     }
 )
 notations.push(
     {
-        'name': (_) => { return 'Y Sequence' },
-        'author': 'Yukito',
-        'mode': (mode) => { return mode == '1' },
-        'description': '"1":The Y Sequence Mode(The limit is SYO).',
-        'expand': (seq, fs, _) => {
-            seq = seq.split(',').map((x) => parseInt(x) > 0 ? parseInt(x) : 1)
-            return expandwY(seq,fs,1).join(',')
-        },
-        'limit':(fs,_)=>{showMountain(drawMountain(generateMountain([1,fs+1])));return '1,'+(fs+1).toString()}
+        name: 'Y Sequence',
+        author: 'Yukito',
+        abbr:'Y',
+        description: '"Y":The Y Sequence Mode(The limit is SYO).',
+        expand(a, fs, data) { return expandwY(a, fs, 1, data) },
+        expandLimit(fs,data) { showMountain(drawMountain(generateMountain([1, fs + 1])),data); return [1, fs + 1] },
+        data: {
+            display: ['checkbox', 'Show mountain', true],
+            debug: ['checkbox', 'Log to the console', false],
+        }
     }
 )
 notations.push(
     {
-        'name': (mode) => { return 'D '+parseInt(mode).toString()+'-Y Sequence' },
-        'author': 'Gomen520',
-        'mode': (mode) => { return (parseInt(mode)>=2) },
-        'description': '"n"(n is a positive integer):The Diagonalized n-Y Sequence Mode.(probably wrong)',
-        'expand': (seq, fs, mode) => {
-            seq = seq.split(',').map((x) => parseInt(x) > 0 ? parseInt(x) : 1)
-            return expandwY(seq,fs,parseInt(mode)).join(',')
-        },
-        'limit':(fs,_)=>{showMountain(drawMountain(generateMountain([1,fs+1])));return '1,'+(fs+1).toString()}
+        name: '(Diagonalized) n-Y Sequence',
+        author: 'Gomen520',
+        abbr:'DY',
+        description: 'DY:The Diagonalized n-Y Sequence Mode.(probably wrong)',
+        expand(a, fs, data) { return expandwY(a, fs, parseInt(data.dim), data) },
+        expandLimit(fs,data) { showMountain(drawMountain(generateMountain([1, fs + 1])),data); return [1, fs + 1] },
+        data: {
+            magma: ['radio', ['Magma style', 'weak', 'medium', 'actual', 'strong'], 3],
+            display: ['checkbox', 'Show mountain', true],
+            debug: ['checkbox', 'Log to the console', false],
+            dim: ['text', 'Max dimensions', 3],
+        }
     }
 )
 notations.push(
     {
-        'name': (_) => { return 'ω-Y Sequence' },
-        'author': 'Yukito',
-        'mode': (mode) => { return mode == 'w' },
-        'description': '"w":The Weak Magma ω-Y Sequence Mode(The limit is MHO).',
-        'expand': (seq, fs, _) => {
-            seq = seq.split(',').map((x) => parseInt(x) > 0 ? parseInt(x) : 1)
-            return expandwY(seq,fs,-1).join(',')
-        },
-        'limit':(fs,_)=>{showMountain(drawMountain(generateMountain([1,fs+1])));return '1,'+(fs+1).toString()}
+        name: '(Consistent) n-Y Sequence',
+        abbr:'CY',
+        description: '"CY":The Consistent n-Y Sequence Mode.(1,3=1,2,5,15,52,..., WRONG when n>3)',
+        expand(a, fs, data) { return expandwY(a, fs, parseInt(data.dim), data,true) },
+        expandLimit(fs,data) { showMountain(drawMountain(generateMountain([1, fs + 1])),data); return [1, fs + 1] },
+        data: {
+            magma: ['radio', ['Magma style', 'weak', 'medium', 'actual', 'strong'], 1],
+            display: ['checkbox', 'Show mountain', true],
+            debug: ['checkbox', 'Log to the console', false],
+            dim: ['text', 'Max dimensions', 2],
+        }
+    }
+)
+notations.push(
+    {
+        name: 'ω-Y Sequence',
+        author: 'Yukito',
+        abbr:'w',
+        description: '"w":The Weak Magma ω-Y Sequence Mode(The limit is MHO).',
+        expand(a, fs, data) { return expandwY(a, fs, -1,data) },
+        expandLimit(fs,data) { showMountain(drawMountain(generateMountain([1, fs + 1])),data); return [1, fs + 1] },
+        data: {
+            magma: ['radio', ['Magma style', 'weak', 'medium', 'actual', 'strong'], 3],
+            display: ['checkbox', 'Show mountain', true],
+            debug: ['checkbox', 'Log to the console', false],
+        }
     }
 )

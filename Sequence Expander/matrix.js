@@ -19,11 +19,7 @@ function readMatrix(str) {    //从字符串读取矩阵
     return s
 }
 function writeMatrix(mat) {    //矩阵化为字符串
-    let res=''
-    for (let i = 0; i < mat.length; i++) {
-        res += ('(' + mat[i].join(',') + ')')
-    }
-    return res
+    return '('+mat.map((x)=>{return x.join(',')}).join(')(')+')'
 }
 function expandBMS(s,fs,idealized=false){    //展开BMS
     let l=s.length
@@ -86,29 +82,43 @@ function expandBMS(s,fs,idealized=false){    //展开BMS
 function expandCMS(s,fs){    //展开CMS
     //不会
 }
+function remove0(arr){    //去掉末尾的0
+    let i=0
+    while(i<arr.length&&arr[i]>0)++i
+    return arr.slice(0,i)
+}
+function matrixOrder(a,b){    //比较两个矩阵
+    return lexOrder(a,b,0,lexOrder(remove0(a),remove0(b)))
+}
+function matrixIsSucc(a){        //判断矩阵是否为后继
+    return remove0(a[a.length-1]).length==0
+}
+
 notations.push(
     {
-        'name': (_) => { return 'Bashicu Matrix System 4' },
-        'author': 'Bashicu',
-        'mode': (mode) => { return mode == 'B' },
-        'description': '"B":The BMS Mode(Bashicu Matrix System, the limit is SHO).',
-        'expand': (seq, fs, _) => {
-            seq = readMatrix(seq)
-            return writeMatrix(expandBMS(seq,fs,false))
-        },
-        'limit':(fs,_)=>{return writeMatrix([new Array(fs+1).fill(0),new Array(fs+1).fill(1)])}
+        name:'Bashicu Matrix System',
+        author: 'Bashicu',
+        abbr:'B',
+        description: '"B":The BMS Mode(Bashicu Matrix System, the limit is SHO).',
+        read:readMatrix,
+        write:writeMatrix,
+        compare:matrixOrder,
+        isSucc:matrixIsSucc,
+        expand(a, fs, data){return expandBMS(a,fs,data.idealized)},
+        expandLimit(fs){return [new Array(fs+1).fill(0),new Array(fs+1).fill(1)]},
+        data:{idealized:['checkbox','Remove "Upgrading Effect(probably wrong)"',false]}
     }
 )
-notations.push(
+/*notations.push(
     {
-        'name': (_) => { return 'Bashicu Matrix System 3.3' },
-        'author': 'Bashicu',
-        'mode': (mode) => { return mode == 'IB' },
-        'description': '"IB":The IBMS Mode(BM3.3, the BMS "without upgrading", the limit is SHO).',
-        'expand': (seq, fs, _) => {
-            seq = readMatrix(seq)
-            return writeMatrix(expandBMS(seq,fs,true))
-        },
-        'limit':(fs,_)=>{return writeMatrix([new Array(fs+1).fill(0),new Array(fs+1).fill(1)])}
+        name:'Bashicu Matrix System 3.3',
+        author: 'Bashicu',
+        mode(mode){ return mode == 'IB' },
+        description: '"IB":The IBMS Mode(BM3.3, the BMS "without upgrading", the limit is SHO).',
+        read:readMatrix,
+        write:writeMatrix,
+        compare:matrixOrder,
+        expand(a, fs){return expandBMS(a,fs,true)},
+        expandLimit(fs){return [new Array(fs+1).fill(0),new Array(fs+1).fill(1)]}
     }
-)
+)*/

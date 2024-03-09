@@ -4,46 +4,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sequence Expander</title>
+    <title>Notation Expander</title>
     <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="functions.js"></script>
     <script src="main.js"></script>
+    <script src="explorer.js"></script>
     <script src="smallY.js"></script>
     <script src="wy.js"></script>
     <script src="matrix.js"></script>
     <script src="hydra.js"></script>
+    <script src="phi.js"></script>
+    <script src="sss.js"></script>
 </head>
 
 <body>
-    <h2>Sequence Expander</h2>
-    <textarea name="input" id="input" style="width:100%;resize: none;margin-bottom: 10px;" rows="4"
+    <h2>Notation Expander</h2>
+    <textarea name="input" id="input" class="input1"
         placeholder="Input(input 'limit' to expand the limit of the notation)"
         oninput="requestAnimationFrame(autoExpand)" contenteditable>1,4</textarea><br>
-    <textarea name="output" id="output" style="width:100%;resize: none;" rows="4" placeholder="Output"
-        readonly></textarea><br>
+    <textarea name="output" id="output" class="input1" placeholder="Output" readonly></textarea><br>
+
     FS Term<textarea id="fsterm" style="width:100px;resize: none;margin-bottom: -4px;" rows="1" placeholder="FS Term"
         oninput="requestAnimationFrame(autoExpand)">3</textarea>
+
     Mode<textarea id="mode" onchange="changeMode()" style="width:100px;resize: none;margin-bottom: -4px;" rows="1"
-        placeholder="Mode" oninput="requestAnimationFrame(autoExpand)">w</textarea>
+        placeholder="Mode" oninput="requestAnimationFrame(autoExpand)"></textarea>
+
     Auto Expand<input type="checkbox" id="auto" value="auto" onchange="autoExpand()">
-    Log to the console<input type="checkbox" id="debug" value="debug">
-    <button id="expand1" onclick="expand()">Expand</button>
-    <button id="swap" onclick="swap()">Swap</button><br>
-    Mountain Style(only available for Y Sequence series)<form id="settings">
-        <label for="mt"><input type="radio" name="mt" value="0">No Mountain</label>
-        <label for="mt"><input type="radio" name="mt" value="1">Table Mountain</label>
-    </form><br>
+    <button class="button1" id="expand1" onclick="expand()">Expand</button>
+    <button class="button1" id="swap" onclick="swap()"> Swap </button>
+    <button class="button1" id="clear1" onclick="clear1()"> Clear </button><br>
+    Current notation: <span id="sequenceName" style="color: red;">???</span> by <span id="author"
+        style="color: orange;">???</span>
+    <button id="select" onclick="showList()">Select</button><br>
+    or Upload your own notation(JSON file)<input id="upload" type="file" onchange="reader.readAsText(document.getElementById('upload').files[0])"><br>
+    <div class="box" id="notationList">
+        <div class="caption">Notation list</div>
+        <div id="nList" class="list"></div>
+    </div>
+    Special settings for this notation:
+    <form id="settings"></form>
+    <br>
+
     <i>WARNING: If you input ILLEGAL or NONSTANDARD expressions, you may get wrong answers!</i><br>
     <p>
-        "Inspired by <span id="sequenceName">???</span> by <span id="author">???</span>"<br>
         Made by FiveYearGaoKao<br>
-        Version 0.2.6<br>
-    </p>
-    <p>
-    <details>
-        <summary>Here are some information for "Mode":</summary>
-        <ul id="help">
-        </ul>
-    </details>
+        Version 1.0.0<br>
     </p>
     <div id="test"></div>
 </body>
