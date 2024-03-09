@@ -41,6 +41,9 @@ function readHydra(str) {    //读取字符串
 function writeHydra(hydra) {    //将Hydra化为字符串
     return ('p' + hydra[0].toString() + '(' + (hydra.length > 1 ? hydra.slice(1).map(writeHydra).join('+') : '0') + ')')
 }
+function writeKPHydra(hydra){
+    return ('(' + (hydra.length > 1 ? hydra.slice(1).map(writeKPHydra).join('') : '') + ')')
+}
 function compareHydra(h1, h2) {    //Hydra比较
     if (h1[0] > h2[0]) {
         return 1
@@ -152,6 +155,10 @@ function writeHydra1(a) {
     l = writeHydra(a)
     return l.slice(3, l.length - 1)
 }
+function writeKPHydra1(a) {
+    l = writeKPHydra(a)
+    return l.slice(1, l.length - 1)
+}
 
 notations.push(
     {
@@ -160,7 +167,7 @@ notations.push(
         abbr:'0H',
         description: '"0H":The Kirby-Paris Hydra Mode(p0(#+1)=p0(#)*ω, the limit is ε_0).',
         read:readHydra,
-        write:writeHydra1,
+        write:writeKPHydra1,
         compare:compareHydra,
         isSucc:hydraSucc,
         expand(a,fs){return expandHydra(a,fs,false)},
