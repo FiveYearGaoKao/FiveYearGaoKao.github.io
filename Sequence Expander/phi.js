@@ -184,7 +184,7 @@ notations.push(
         compare: 'placeholder',//TODO
         isSucc: phiSucc,
         expand: expandPhi,
-        expandlimit(fs, _) {
+        expandLimit(fs, _) {
             return new Array(fs+2).fill(0).fill(1,0,2)
         }
     }

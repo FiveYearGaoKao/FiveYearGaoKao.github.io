@@ -158,7 +158,7 @@ function expand() {    //真正的展开
     } else {
         if (typeof (notations[j].read) == 'function') {
             a = notations[j].read(seq, data)
-            if (typeof (notations[j].expandLimit) == 'function') {
+            if (typeof (notations[j].expand) == 'function') {
                 out = notations[j].expand(a, fs, data)
             } else {
                 document.getElementById('output').value =
