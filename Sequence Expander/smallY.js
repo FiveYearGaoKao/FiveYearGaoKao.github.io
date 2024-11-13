@@ -27,7 +27,7 @@ function expandRidiculousY(seq,fs){    //展开奇异搞笑记号
         return res
     }
 }
-function expandPrSS(seq, fs, lifting = false,forcedbr=null) {    //-1-Y、PrSS和LPrSS
+function expandPrSS(seq, fs, lifting = false,forcedbr=-1) {    //-1-Y、PrSS和LPrSS
     if (seq[seq.length - 1] <= 1) {
         seq.pop()
         return seq
