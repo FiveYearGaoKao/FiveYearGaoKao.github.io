@@ -44,3 +44,6 @@ function randInt(a,b){    //随机数
 function copyArray(seq){    //复制树状数组
     return ((typeof(seq)=='number')?seq:seq.map(x=>copyArray(x)))
 }
+function isNumber(x){
+    return (typeof(x)==='number')
+}

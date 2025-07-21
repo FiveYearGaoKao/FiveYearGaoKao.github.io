@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="../styles/expanders.css">
+    <title>0-Y Mountain Viewer</title>
+</head>
+
+<body>
+    <h2>0-Y Mountain Viewer</h2>
+    <textarea id="seq1" class="input1" oninput="draw()">1,4,6,3,7,9,7</textarea><br>
+    <div id="options">
+        <label><span style="width: 150px; display:inline-block;">Row height</span>
+            <input id="ROWHEIGHT" style="width:120px" type="range" min=15 max=150 value=32 oninput="draw()">
+            <span id="ROWHEIGHT_value">?</span></label><br>
+        <label><span style="width: 150px; display:inline-block;">Column width</span>
+            <input id="COLUMNWIDTH" style="width:120px" type="range" min=15 max=150 value=32 oninput="draw()">
+            <span id="COLUMNWIDTH_value">?</span></label><br>
+        <label><span style="width: 150px; display:inline-block;">Line Thickness</span>
+            <input id="LINETHICKNESS" style="width:120px" type="range" min=1 max=15 value=1 oninput="draw()">
+            <span id="LINETHICKNESS_value">?</span></label><br>
+        <label><span style="width: 150px; display:inline-block;">Number size</span>
+            <input id="NUMBERSIZE" style="width:120px" type="range" min=4 max=96 value=10 oninput="draw()">
+            <span id="NUMBERSIZE_value">?</span></label><br>
+        <label><span style="width: 150px; display:inline-block;">Number Thickness</span>
+            <input id="NUMBERTHICKNESS" style="width:120px" type="range" min=100 max=900 value=400 step=100
+                oninput="draw()">
+            <span id="NUMBERTHICKNESS_value">?</span></label><br>
+        <label><span style="width: 150px; display:inline-block;">Line place</span>
+            <input id="LINEPLACE" style="width:120px" type="range" min=0 max=2 value=1 step=0.01 oninput="draw()">
+            <span id="LINEPLACE_value">?</span></label><br>
+    </div>
+    <button id="draw" class="button1" onclick="draw()">Draw</button>
+    <button id="reset" class="button1" onclick="reset1()">Reset Settings</button>
+    <br>
+    <canvas id="canvas1"></canvas>
+    <p>
+        Made by FiveYearGaoKao<br>
+        0-Y Sequence by Yukito<br>
+        See also: <a href="https://naruyoko.github.io/whYmountain/">whY mountain</a>
+        and <a href="https://naruyoko.github.io/MEGAwhYmountain/">MEGA-whY mountain</a><br>
+        Version 0.1.0<br>
+    </p>
+</body>
+<script>
+    //获取绘制选项
+    function getOptions() {
+        let options = {};
+        ["ROWHEIGHT", "COLUMNWIDTH", "LINETHICKNESS", "NUMBERSIZE", "NUMBERTHICKNESS", "LINEPLACE"].forEach(function (x) {
+            options[x] = parseFloat(document.getElementById(x).value);
+            document.getElementById(x + "_value").innerHTML = options[x];
+        })
+        return options;
+    }
+    //重置选项
+    function reset1(){
+        document.getElementById("ROWHEIGHT").value=32;
+        document.getElementById("COLUMNWIDTH").value=32;
+        document.getElementById("LINETHICKNESS").value=1;
+        document.getElementById("NUMBERSIZE").value=10;
+        document.getElementById("NUMBERTHICKNESS").value=400;
+        document.getElementById("LINEPLACE").value=1;
+        draw();
+    }
+    //计算山脉图，格式为二维数组
+    function drawMountain(seq) {
+        let l = seq.length;
+        let h = 0;
+        let val = new Array(0);
+        let leftLeg = new Array(0);
+        val.push(new Array(l));
+        leftLeg.push(new Array(l));
+        for (let i = 0; i < l; ++i) {
+            val[h][i] = seq[i];
+            leftLeg[h][i] = i - 1;
+        }
+        while (val[h][l - 1] > 1) {
+            val.push(new Array(l));
+            leftLeg.push(new Array(l));
+            for (let i = l - 1; i >= 0; --i) {
+                let j = i;
+                while (j >= 0 && val[h][j] >= val[h][i]) {
+                    j = leftLeg[h][j];
+                }
+                leftLeg[h + 1][i] = j;
+                val[h + 1][i] = val[h][i] - (j >= 0 ? val[h][j] : 0);
+            }
+            ++h;
+        }
+        return {
+            val: val,
+            leftLeg: leftLeg,
+        };
+    }
+    //绘制山脉图
+    function displayMountain(m, options) {
+        let rows = m.val.length - 1;
+        let cols = m.val[0].length;
+        let fontSize = options.NUMBERSIZE;
+        let rowHeight = options.ROWHEIGHT;
+        let colWidth = options.COLUMNWIDTH;
+        let lineplace = options.LINEPLACE <= 1 ?
+            options.LINEPLACE * fontSize :
+            (fontSize + (rowHeight - fontSize) * (options.LINEPLACE - 1));
+        let x0 = colWidth/2;
+        let y0 = rowHeight * rows;
+        let w = colWidth * cols;
+        let h = rowHeight * rows;
+        let c = document.getElementById("canvas1");
+        let ctx = c.getContext("2d");
+        c.width = w;
+        c.height = h;
+        c.style.width = w + 'px';
+        c.style.height = h + 'px';
+        ctx.font = options.NUMBERTHICKNESS + " " + fontSize + "px Arial";
+        ctx.lineWidth = options.LINETHICKNESS;
+        ctx.textAlign = "center";
+        for (let i = 0; i < rows; ++i) {
+            for (let j = 0; j < cols; ++j) {
+                ctx.fillText(m.val[i][j], x0 + j * colWidth, y0 - i * rowHeight);
+            }
+        }
+        for (let i = 1; i < rows; ++i) {
+            for (let j = 0; j < cols; ++j) {
+                ctx.beginPath();
+                ctx.moveTo(x0 + j * colWidth, y0 - i * rowHeight + 2);
+                ctx.lineTo(x0 + j * colWidth, y0 - (i - 1) * rowHeight - lineplace);
+                ctx.stroke();
+                let leftLeg = m.leftLeg[i][j];
+                if (leftLeg >= 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(x0 + j * colWidth, y0 - i * rowHeight + 2);
+                    ctx.lineTo(x0 + leftLeg * colWidth, y0 - (i - 1) * rowHeight - lineplace);
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+    function draw() {
+        let seq = document.getElementById("seq1").value.split(',').map(x => parseInt(x));
+        displayMountain(drawMountain(seq), getOptions());
+    }
+    window.onload = function () {
+        let c = document.getElementById("canvas1");
+        let ctx = c.getContext("2d");
+        ctx.textAlign = "center";
+        draw();
+    }
+</script>
+
+</html>

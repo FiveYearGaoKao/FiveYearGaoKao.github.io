@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ordinal Dice</title>
+</head>
+<body>
+    <h2>The Ordinal Dice</h2>
+    Max Ordinal<input type="text" id="max" placeholder="1,0,0,0">
+    Ratio<input type="text" id="ratio" placeholder="0.5"><br>
+    <button id="run" onclick="run()">Roll</button><br>
+    <div id="result"></div>
+    <h2>How to use</h2>
+    The program will randomly generate an ordinal between 0 and max ordinal.<br>
+    The max ordinal should be a sequence of non-negative integers seperated by commas. 
+    Sequence a<sub>n</sub>,a<sub>n-1</sub>,...,a<sub>0</sub> represents ordinal 
+    ω<sup>n</sup>a<sub>n</sub>+ω<sup>n-1</sup>a<sub>n-1</sub>+...+ωa<sub>1</sub>+a<sub>0</sub>.<br>
+    The ratio should be a real number between 0 and 1. Higher ratio means a higher chance to get a large ordinal.<br>
+    <p>
+        Made by FiveYearGaoKao<br>
+        Version 1.0.0<br>
+    </p>
+</body>
+<script>
+    function geometricDistribution(p=0.5){
+        let a=Math.random();
+        return Math.floor(Math.log(a)/Math.log(p));
+    }
+    function getFixedOrdinalPosition(L,p=0.5){
+        if(L.length==0){
+            return 0;
+        }else{
+            let a=L.shift();
+            let b=getFixedOrdinalPosition(L,p);
+            let xa=Math.pow(p,a);
+            return (1-xa)+(1-p)*xa*b;
+        }
+    }
+    function getOrdinalPosition(L,p=0.5){
+        while(L[0]==0){
+            L.shift();
+        }
+        if(L.length==0){
+            return 0;
+        }
+        let a=L.length;
+        if(L.length>1){
+            L[0]-=1;
+        }
+        let b=getFixedOrdinalPosition(L,p);
+        let xa=Math.pow(p,a-1);
+        return (1-xa)+(1-p)*xa*b;
+    }
+    function getFixedOrd(x,dim,p=0.5){
+        if(dim==0){
+            return []; 
+        }else{
+            let a=Math.floor(Math.abs(Math.log(1-x)/Math.log(p)));
+            let xa=Math.pow(p,a);
+            let diff=Math.abs((x+xa-1)/(xa*(1-p)));
+            let b=getFixedOrd(diff,dim-1,p);
+            b.unshift(a);
+            return b;
+        }
+    }
+    function getOrd(x,p=0.5){
+        let dim=Math.floor(Math.abs(Math.log(1-x)/Math.log(p)));
+        let xa=Math.pow(p,dim);
+        let diff=Math.abs((x+xa-1)/(xa*(1-p)));
+        let b=getFixedOrd(diff,dim+1,p);
+        if(dim>0){
+            b[0]+=1;
+        }
+        return b;
+    }
+    function ordtoString(L){
+        let n=L.length-1;
+        if(L.length==0){
+            return '0';
+        }else if(L.length==1){
+            return L[0].toString();
+        }else{
+            let a=L.shift();
+            let b=ordtoString(L);
+            if(a==0){
+                return b;
+            }else{
+                let res='ω';
+                if(n>1){
+                    res+=('^'+n.toString());
+                }
+                if(a>1){
+                    res+=('*'+a.toString());
+                }
+                if(b=='0'){
+                    return res;
+                }else{
+                    return res+'+'+b;
+                }
+            }
+        }
+    }
+    function run(){
+        let L=(document.getElementById("max").value||"1,0,0,0").split(',').map(x=>parseInt(x));
+        let p=parseFloat(document.getElementById("ratio").value||"0.5");
+        let maxOrd=ordtoString(L.slice());
+        p=p>1?1:p<0?0:p;
+        let r=Math.random();
+        let maxV=getOrdinalPosition(L,p);
+        let res=getOrd(maxV*r,p);
+        document.getElementById("result").innerHTML="1d("+maxOrd+")="+ordtoString(res);
+        return 0;
+    }
+    window.onload=run;
+</script>
+</html>
