@@ -31,7 +31,10 @@
         <label><span style="width: 150px; display:inline-block;">Line place</span>
             <input id="LINEPLACE" style="width:120px" type="range" min=0 max=2 value=1 step=0.01 oninput="draw()">
             <span id="LINEPLACE_value">?</span></label><br>
-        <label>Transparent background<input id="TRANSPARENT" type="checkbox" checked="false" oninput="draw()"></label>
+        <label>Transparent background<input id="TRANSPARENT" type="checkbox" checked="false"
+                oninput="draw()"></label><br>
+        <label>Max row
+            <input id="MAXROW" style="width:80px" type="number" min="0" value="0" oninput="draw()"></label>
     </div>
     <button id="draw" class="button1" onclick="draw()">Draw</button>
     <button id="reset" class="button1" onclick="reset1()">Reset Settings</button><br>
@@ -57,7 +60,8 @@
             options[x] = parseFloat(document.getElementById(x).value);
             document.getElementById(x + "_value").innerHTML = options[x];
         })
-        options["TRANSPARENT"]=document.getElementById("TRANSPARENT").checked;
+        options["TRANSPARENT"] = document.getElementById("TRANSPARENT").checked;
+        options["MAXROW"] = document.getElementById("MAXROW").value;
         return options;
     }
     //重置选项
@@ -68,7 +72,8 @@
         document.getElementById("NUMBERSIZE").value = 10;
         document.getElementById("NUMBERTHICKNESS").value = 400;
         document.getElementById("LINEPLACE").value = 1;
-        document.getElementById("TRANSPARENT").checked=true;
+        document.getElementById("TRANSPARENT").checked = true;
+        document.getElementById("MAXROW").value = 0;
         draw();
     }
     //计算山脉图，格式为二维数组
@@ -103,7 +108,8 @@
     }
     //绘制山脉图
     function displayMountain(m, options) {
-        let rows = m.val.length - 1;
+        let rows = options.MAXROW <= 0 ?
+            Math.max(m.val.length - 1,1) : Math.min(options.MAXROW, m.val.length);
         let cols = m.val[0].length;
         let fontSize = options.NUMBERSIZE;
         let rowHeight = options.ROWHEIGHT;
@@ -124,10 +130,10 @@
         ctx.font = options.NUMBERTHICKNESS + " " + fontSize + "px Arial";
         ctx.lineWidth = options.LINETHICKNESS;
         ctx.textAlign = "center";
-        if(!options.TRANSPARENT){
-            ctx.fillStyle="#FFFFFF";
-            ctx.fillRect(0,0,w,h);
-            ctx.fillStyle="#000000";
+        if (!options.TRANSPARENT) {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = "#000000";
         }
         for (let i = 0; i < rows; ++i) {
             for (let j = 0; j < cols; ++j) {
@@ -151,15 +157,15 @@
         }
     }
     function draw() {
-        let seq = document.getElementById("seq1").value.split(',').map(x => parseInt(x)).filter(x=>x>0);
-        let title='0-Y('+seq.join(',')+')'
+        let seq = document.getElementById("seq1").value.split(',').map(x => parseInt(x)).filter(x => x > 0);
+        let title = '0-Y(' + seq.join(',') + ')'
         displayMountain(drawMountain(seq), getOptions());
-        document.getElementById("canvas1").toBlob(function(blob){
-            const url=URL.createObjectURL(blob);
-            document.getElementById('img1').src=url;
-            document.getElementById('img1').title=title;
-            document.getElementById('download1').href=url;
-            document.getElementById('download1').download=title;
+        document.getElementById("canvas1").toBlob(function (blob) {
+            const url = URL.createObjectURL(blob);
+            document.getElementById('img1').src = url;
+            document.getElementById('img1').title = title;
+            document.getElementById('download1').href = url;
+            document.getElementById('download1').download = title;
         })
         //let url=document.getElementById("canvas1").toDataURL();
         //document.getElementById('img1').src=url;
