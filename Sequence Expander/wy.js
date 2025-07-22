@@ -97,14 +97,14 @@ function connect(mt2, newNode, cd, tops, roots, i) {    //作出新边时的一�
     }
     tops[i] = newNode
 }
-function magma(node,mag) {    //从一个节点开始，递归地作magma边
-    let isStrong=(mag==4||(mag==3&&(node.y[0]>0||(ordCmp(node.y,[0])==0))))&&(node.y[0]!=-1)
-    let source=isStrong?node.down:node
+function magma(node, mag) {    //从一个节点开始，递归地作magma边
+    let isStrong = (mag == 4 || (mag == 3 && (node.y[0] > 0 || (ordCmp(node.y, [0]) == 0)))) && (node.y[0] != -1)
+    let source = isStrong ? node.down : node
     for (let i = 0; i < source.right.length; ++i) {
-        let nd = isStrong?source.right[i]:source.right[i].down
+        let nd = isStrong ? source.right[i] : source.right[i].down
         if (nd != null && ordCmp(nd.y, node.y) == 0) {
             nd.isMagma = true
-            magma(nd,mag)
+            magma(nd, mag)
         }
     }
 }
@@ -193,7 +193,7 @@ function displayMountain(mt, data) {    //可视化山脉
     let row = [0]
     let realRow = 0
     let running = true
-    let idx = new Array(mt.length)
+    let idx = new Array(mt.length)  //记录当前每一列绘制的节点
     let html = '<table>\n'
     for (let i = 0; i < mt.length; ++i) {
         idx[i] = mt[i]
@@ -246,9 +246,114 @@ function displayMountain(mt, data) {    //可视化山脉
     html += '</table>'
     return html
 }
+function reorganizeMountain(mt) {     //以二维数组形式重新表示山脉图
+    let row = [0];
+    let mt1 = [];
+    let l = mt.length;
+    let running = true;
+    let idx = new Array(l);
+    for (let i = 0; i < l; ++i) {
+        idx[i] = mt[i];
+    }
+    while (running) {
+        running = false;
+        let row0 = null;  //新的行标
+        let a = new Array(l);
+        for (let i = 0; i < l; ++i) {
+            if (idx[i] == null || ordCmp(row, idx[i].y) < 0) {
+                a[i] = null;
+            } else {
+                running = true;
+                a[i] = idx[i];
+                idx[i] = idx[i].up;
+            }
+            if (idx[i] != null) {
+                if (row0 != null) {
+                    row0 = ordMin(row0, idx[i].y);
+                } else {
+                    row0 = idx[i].y;
+                }
+            }
+        }
+        if (row0 == null) {
+            row0 = ordPlus(row, [1]);
+        }
+        row = row0;
+        if (running) {
+            mt1.push(a);
+            let zeros = 0;
+            while (row0[zeros] == 0) {
+                ++zeros;
+            }
+            if (zeros > 0) {
+                mt1.push(zeros);
+            }
+        }
+    }
+    return mt1;
+}
+function displayMountain2(mt1) {
+    let rows = mt1.length;
+    let cols = mt1[0].length;
+    let fontSize = 10;
+    let rowHeight = 32;
+    let colWidth = 32;
+    let x0 = colWidth / 2;
+    let y0 = rowHeight * rows;
+    let w = colWidth * cols;
+    let h = rowHeight * rows;
+    let c = document.createElement("canvas");
+    let ctx = c.getContext("2d");
+    c.width = w;
+    c.height = h;
+    c.style.width = w + 'px';
+    c.style.height = h + 'px';
+    c.style.display = "block";
+    ctx.font = fontSize + "px Arial";
+    ctx.textAlign = "center";
+    let idx = new Array(rows).fill(0);
+    for (let i = 0; i < rows; ++i) {
+        if (typeof (mt1[i]) === "number") {
+            let a = mt1[i];
+            for (let j = 1; j <= a; ++j) {
+                let y1 = y0 - i * rowHeight - fontSize - 3 + rowHeight * j / (a + 1);
+                ctx.beginPath();
+                ctx.moveTo(0, y1);
+                ctx.lineTo(w, y1);
+                ctx.stroke();
+            }
+        } else {
+            for (let j = 0; j < cols; ++j) {
+                if (mt1[i][j] != null) {
+                    ctx.fillText(mt1[i][j].value, x0 + j * colWidth, y0 - i * rowHeight - 3);
+                    if (i > 0) {
+                        //绘制右腿
+                        ctx.beginPath();
+                        ctx.moveTo(x0 + j * colWidth, y0 - i * rowHeight);
+                        ctx.lineTo(x0 + j * colWidth, y0 - idx[j] * rowHeight - fontSize - 3);
+                        ctx.stroke();
+                        let leftleg = mt1[i][j].left;
+                        if (leftleg != null) {
+                            //绘制左腿
+                            ctx.beginPath();
+                            ctx.moveTo(x0 + j * colWidth, y0 - i * rowHeight);
+                            ctx.lineTo(x0 + leftleg.x * colWidth, y0 - (i - 1) * rowHeight - fontSize - 3);
+                            if (idx[leftleg.x] < i) ctx.lineTo(x0 + leftleg.x * colWidth, y0 - idx[leftleg.x] * rowHeight - fontSize - 3);
+                            ctx.stroke();
+                        }
+                    }
+                    idx[j] = i;
+                }
+            }
+        }
+    }
+    return c;
+}
 function showMountain(mt, data) {
-    if (data.display) {
+    if (data.display == 2) {
         document.getElementById('test').innerHTML += (displayMountain(mt, data) + '\n<br>\n')
+    } else if (data.display == 3) {
+        document.getElementById("test").appendChild(displayMountain2(reorganizeMountain(mt)));
     }
 }
 function expandwYMountain(seq, fs, n = -1, data, consistent = false) {    //展开序列,n=-1按w-Y展开,n=-2按???-Y展开
@@ -256,7 +361,7 @@ function expandwYMountain(seq, fs, n = -1, data, consistent = false) {    //展�
     let mt1 = drawMountain(seq, n, consistent)
     let mt2
     showMountain(mt1, data)
-    if ((seq[seq.length - 1].value <= 1)||fs<=0) {    //末项是1的平凡情况
+    if ((seq[seq.length - 1].value <= 1) || fs <= 0) {    //末项是1的平凡情况
         seq.pop()
         mt2 = drawMountain(seq, n)
         showMountain(mt2, data)
@@ -304,7 +409,7 @@ function expandwYMountain(seq, fs, n = -1, data, consistent = false) {    //展�
         let rc = []   //根列元素
         nd = mt2[root.x].down
         while (nd != null && ordCmp(root.y, nd.y) >= 0) {    //作出magma元素并标记根列
-            magma(nd,data.magma)
+            magma(nd, data.magma)
             rc.push(nd)
             if (nd.up == null) {
                 break
@@ -430,7 +535,7 @@ function expandwYMountain(seq, fs, n = -1, data, consistent = false) {    //展�
                 }
             } else {    //尊重原著
                 for (let j = 0; j < bl; ++j) {    //对于复制部分的每一列，进行操作
-                    if(i==fs-1&&j==bl-1)break
+                    if (i == fs - 1 && j == bl - 1) break
                     let nd = mt2[root.x + j + 1]
                     let ir = 0
                     let thisRc = rc[ir]
@@ -455,7 +560,7 @@ function expandwYMountain(seq, fs, n = -1, data, consistent = false) {    //展�
                                 displayMountain(mt2, data)
                             }
                             {    //作出magma边
-                                let thisNode = (data.magma==1||n==1)?nd.up.left:nd.left
+                                let thisNode = (data.magma == 1 || n == 1) ? nd.up.left : nd.left
                                 let newLeft = findNode(mt2[thisNode.x + dis], nd.y)
                                 while (newLeft.up != null && ordCmp(newLeft.y, thisRef.y) < 0) {
                                     let dy = ordMinus(newLeft.up.y, newLeft.y).length
@@ -535,12 +640,12 @@ notations.push(
     {
         name: '0-Y Sequence',
         author: 'Yukito',
-        abbr:'0Y',
+        abbr: '0Y',
         description: '"0Y":The 0-Y Sequence Mode(The "linear version" of BMS, the limit is SHO).',
         expand(a, fs, data) { return expandwY(a, fs, 0, data) },
-        expandLimit(fs,data) { showMountain(drawMountain(generateMountain([1, fs + 1])),data); return [1, fs + 1] },
+        expandLimit(fs, data) { showMountain(drawMountain(generateMountain([1, fs + 1])), data); return [1, fs + 1] },
         data: {
-            display: ['checkbox', 'Show mountain', true],
+            display: ['radio', ['Mountain style', 'no mountain', 'table mountain', 'MEGA-whY mountain(beta)'], 2],
             debug: ['checkbox', 'Log to the console', false],
         }
     }
@@ -549,12 +654,12 @@ notations.push(
     {
         name: 'Y Sequence',
         author: 'Yukito',
-        abbr:'Y',
+        abbr: 'Y',
         description: '"Y":The Y Sequence Mode(The limit is SYO).',
         expand(a, fs, data) { return expandwY(a, fs, 1, data) },
-        expandLimit(fs,data) { showMountain(drawMountain(generateMountain([1, fs + 1])),data); return [1, fs + 1] },
+        expandLimit(fs, data) { showMountain(drawMountain(generateMountain([1, fs + 1])), data); return [1, fs + 1] },
         data: {
-            display: ['checkbox', 'Show mountain', true],
+            display: ['radio', ['Mountain style', 'no mountain', 'table mountain', 'MEGA-whY mountain(beta)'], 2],
             debug: ['checkbox', 'Log to the console', false],
         }
     }
@@ -563,13 +668,13 @@ notations.push(
     {
         name: '(Diagonalized) n-Y Sequence',
         author: 'Gomen520',
-        abbr:'DY',
+        abbr: 'DY',
         description: 'DY:The Diagonalized n-Y Sequence Mode.(probably wrong)',
         expand(a, fs, data) { return expandwY(a, fs, parseInt(data.dim), data) },
-        expandLimit(fs,data) { showMountain(drawMountain(generateMountain([1, fs + 1])),data); return [1, fs + 1] },
+        expandLimit(fs, data) { showMountain(drawMountain(generateMountain([1, fs + 1])), data); return [1, fs + 1] },
         data: {
             magma: ['radio', ['Magma style', 'weak', 'medium', 'actual', 'strong'], 3],
-            display: ['checkbox', 'Show mountain', true],
+            display: ['radio', ['Mountain style', 'no mountain', 'table mountain', 'MEGA-whY mountain(beta)'], 2],
             debug: ['checkbox', 'Log to the console', false],
             dim: ['text', 'Max dimensions', 3],
         }
@@ -578,13 +683,13 @@ notations.push(
 notations.push(
     {
         name: '(Consistent) n-Y Sequence',
-        abbr:'CY',
+        abbr: 'CY',
         description: '"CY":The Consistent n-Y Sequence Mode.(1,3=1,2,5,15,52,..., WRONG when n>3)',
-        expand(a, fs, data) { return expandwY(a, fs, parseInt(data.dim), data,true) },
-        expandLimit(fs,data) { showMountain(drawMountain(generateMountain([1, fs + 1])),data); return [1, fs + 1] },
+        expand(a, fs, data) { return expandwY(a, fs, parseInt(data.dim), data, true) },
+        expandLimit(fs, data) { showMountain(drawMountain(generateMountain([1, fs + 1])), data); return [1, fs + 1] },
         data: {
             magma: ['radio', ['Magma style', 'weak', 'medium', 'actual', 'strong'], 1],
-            display: ['checkbox', 'Show mountain', true],
+            display: ['radio', ['Mountain style', 'no mountain', 'table mountain', 'MEGA-whY mountain(beta)'], 2],
             debug: ['checkbox', 'Log to the console', false],
             dim: ['text', 'Max dimensions', 2],
         }
@@ -594,13 +699,13 @@ notations.push(
     {
         name: 'ω-Y Sequence',
         author: 'Yukito',
-        abbr:'w',
+        abbr: 'w',
         description: '"w":The Weak Magma ω-Y Sequence Mode(The limit is MHO).',
-        expand(a, fs, data) { return expandwY(a, fs, -1,data) },
-        expandLimit(fs,data) { showMountain(drawMountain(generateMountain([1, fs + 1])),data); return [1, fs + 1] },
+        expand(a, fs, data) { return expandwY(a, fs, -1, data) },
+        expandLimit(fs, data) { showMountain(drawMountain(generateMountain([1, fs + 1])), data); return [1, fs + 1] },
         data: {
             magma: ['radio', ['Magma style', 'weak', 'medium', 'actual', 'strong'], 3],
-            display: ['checkbox', 'Show mountain', true],
+            display: ['radio', ['Mountain style', 'no mountain', 'table mountain', 'MEGA-whY mountain(beta)'], 2],
             debug: ['checkbox', 'Log to the console', false],
         }
     }

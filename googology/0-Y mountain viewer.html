@@ -37,7 +37,6 @@
     <br>
     <canvas id="canvas1"></canvas>
     <p>
-        Made by FiveYearGaoKao<br>
         0-Y Sequence by Yukito<br>
         See also: <a href="https://naruyoko.github.io/whYmountain/">whY mountain</a>
         and <a href="https://naruyoko.github.io/MEGAwhYmountain/">MEGA-whY mountain</a><br>
@@ -55,13 +54,13 @@
         return options;
     }
     //重置选项
-    function reset1(){
-        document.getElementById("ROWHEIGHT").value=32;
-        document.getElementById("COLUMNWIDTH").value=32;
-        document.getElementById("LINETHICKNESS").value=1;
-        document.getElementById("NUMBERSIZE").value=10;
-        document.getElementById("NUMBERTHICKNESS").value=400;
-        document.getElementById("LINEPLACE").value=1;
+    function reset1() {
+        document.getElementById("ROWHEIGHT").value = 32;
+        document.getElementById("COLUMNWIDTH").value = 32;
+        document.getElementById("LINETHICKNESS").value = 1;
+        document.getElementById("NUMBERSIZE").value = 10;
+        document.getElementById("NUMBERTHICKNESS").value = 400;
+        document.getElementById("LINEPLACE").value = 1;
         draw();
     }
     //计算山脉图，格式为二维数组
@@ -104,7 +103,7 @@
         let lineplace = options.LINEPLACE <= 1 ?
             options.LINEPLACE * fontSize :
             (fontSize + (rowHeight - fontSize) * (options.LINEPLACE - 1));
-        let x0 = colWidth/2;
+        let x0 = colWidth / 2;
         let y0 = rowHeight * rows;
         let w = colWidth * cols;
         let h = rowHeight * rows;
@@ -119,20 +118,20 @@
         ctx.textAlign = "center";
         for (let i = 0; i < rows; ++i) {
             for (let j = 0; j < cols; ++j) {
-                ctx.fillText(m.val[i][j], x0 + j * colWidth, y0 - i * rowHeight);
+                ctx.fillText(m.val[i][j], x0 + j * colWidth, y0 - i * rowHeight - 3);
             }
         }
         for (let i = 1; i < rows; ++i) {
             for (let j = 0; j < cols; ++j) {
                 ctx.beginPath();
-                ctx.moveTo(x0 + j * colWidth, y0 - i * rowHeight + 2);
-                ctx.lineTo(x0 + j * colWidth, y0 - (i - 1) * rowHeight - lineplace);
+                ctx.moveTo(x0 + j * colWidth, y0 - i * rowHeight);
+                ctx.lineTo(x0 + j * colWidth, y0 - (i - 1) * rowHeight - lineplace - 3);
                 ctx.stroke();
                 let leftLeg = m.leftLeg[i][j];
                 if (leftLeg >= 0) {
                     ctx.beginPath();
-                    ctx.moveTo(x0 + j * colWidth, y0 - i * rowHeight + 2);
-                    ctx.lineTo(x0 + leftLeg * colWidth, y0 - (i - 1) * rowHeight - lineplace);
+                    ctx.moveTo(x0 + j * colWidth, y0 - i * rowHeight);
+                    ctx.lineTo(x0 + leftLeg * colWidth, y0 - (i - 1) * rowHeight - lineplace - 3);
                     ctx.stroke();
                 }
             }
