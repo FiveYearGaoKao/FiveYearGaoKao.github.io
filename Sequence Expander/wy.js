@@ -699,8 +699,8 @@ notations.push(
     {
         name: 'ω-Y Sequence',
         author: 'Yukito',
-        abbr: 'w',
-        description: '"w":The Weak Magma ω-Y Sequence Mode(The limit is MHO).',
+        abbr: 'WY',
+        description: '"WY":The Weak Magma ω-Y Sequence Mode(The limit is MHO).',
         expand(a, fs, data) { return expandwY(a, fs, -1, data) },
         expandLimit(fs, data) { showMountain(drawMountain(generateMountain([1, fs + 1])), data); return [1, fs + 1] },
         data: {

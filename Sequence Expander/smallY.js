@@ -143,11 +143,13 @@ notations.push(
     {
         hidden:true,
         password:'111111',
-        name: '-4-Y Sequence',
+        name: 'P Notation',
+        author:'1 3 7 15 13',
         abbr:'-4',
-        description: '"-4":The -4-Y Sequence Mode(It can only expand sequences of "1"s, and the limit is ω).',
+        description: '"-4":The P Notation Mode(It can only expand sequences of "P"s, and the limit is ω).',
+        write:arr=>new Array(arr.length).fill("P").join(","),
         expand(a, fs) { return expandSmallY(a, fs, -4) },
-        expandLimit(fs) { return new Array(fs + 1).fill(1) }
+        expandLimit(fs) { return new Array(fs + 1).fill('P') }
     }
 )
 notations.push(
@@ -172,7 +174,7 @@ notations.push(
     {
         name: 'Extended -2-Y Sequence',
         author: 'FiveYearGaoKao',
-        abbr:'ex-2',
+        abbr:'EX-2',
         description: '"ex-2":The Extended -2-Y Sequence Mode(a,b+1=a,b,a,b,...if a>b, otherwise a,b+1=a,b,b,b,... The limit is ω^ω).',
         expand:expandRidiculousY,
         expandLimit(fs) { return [1, fs + 1] }
