@@ -136,7 +136,17 @@ function copyMountain(seq) {    //复制一份基础山脉
         mt[i] = nd
         connectV(nd, base)
         if (i > 0) {
-            connectH(mt[seq[i].left.x].down, nd)
+            //找待定父项
+            let parent=seq[i].left
+            while(parent.x>0){
+                parent=findNode(parent,ordMin(seq[i].y,seq[parent.x].y))
+                if(ordCmp(parent.y,seq[parent.x].y)==0){
+                    break
+                }else{
+                    parent=parent.left
+                }
+            }
+            connectH(mt[parent.x].down, nd)
         }
     }
     return mt
