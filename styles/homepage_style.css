@@ -1,0 +1,230 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f6f7fb;
+    color: #333;
+    font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.6;
+}
+
+.page-header {
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 16px 16px 0 16px;
+    /* background-color: #4f46e5; */
+    color: #4f46e5;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.page-header .subtitle {
+    margin: 8px 0 0;
+    opacity: 0.85;
+    letter-spacing: 2px;
+}
+
+.container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px 16px;
+}
+
+.card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    margin: 0 0 12px;
+    font-size: 20px;
+    color: #222;
+}
+
+.mark {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 10px;
+    flex: none;
+}
+
+.mark-googology { background-color: #8b5cf6; }
+.mark-tools     { background-color: #3b82f6; }
+.mark-games     { background-color: #ef4444; }
+.mark-notes     { background-color: #10b981; }
+
+.link-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.link-list li {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.link-list li + li {
+    margin-top: 4px;
+}
+
+.link-list li:hover {
+    background-color: #f1f3f9;
+}
+
+.link-list a {
+    color: #4f46e5;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.link-list a:hover {
+    text-decoration: underline;
+}
+
+.tag {
+    font-size: 12px;
+    color: #6b7280;
+    background-color: #eef0f4;
+    border-radius: 10px;
+    padding: 2px 10px;
+    margin-left: 10px;
+}
+
+.tag-archived {
+    background-color: #e5e7eb;
+    color: #9ca3af;
+}
+
+.empty {
+    margin: 4px 0 8px;
+    color: #9ca3af;
+    font-style: italic;
+}
+
+.page-footer {
+    text-align: center;
+    padding: 0px 16px 16px 16px;
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+.page-footer p {
+    margin: 0;
+}
+
+.page-footer a {
+    color: #4f46e5;
+}
+
+/* ===== Ordinal Dice (tools/dice.html) ===== */
+.dice-result {
+    font-size: 22px;
+    font-weight: 600;
+    text-align: center;
+    color: #4f46e5;
+    word-break: break-all;
+}
+
+.dice-viz {
+    position: relative;
+}
+
+#axis {
+    display: block;
+    width: 100%;
+    height: 100px;
+}
+
+#labels {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    pointer-events: none;
+}
+
+.axis-label {
+    position: absolute;
+    top: 8px;
+    font-size: 12px;
+    color: #555;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 0 4px;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+
+.dice-viz-hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.dice-control {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: flex-end;
+}
+
+.dice-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    color: #555;
+}
+
+.dice-field input[type="text"] {
+    width: 220px;
+    padding: 6px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.dice-field input[type="range"] {
+    width: 220px;
+}
+
+#ratioVal {
+    font-weight: 600;
+    color: #4f46e5;
+}
+
+#roll {
+    display: block;
+    width: 120px;
+    height: 40px;
+    margin: 18px auto 4px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    background: #4f46e5;
+    color: #fff;
+    cursor: pointer;
+}
+
+#roll:hover {
+    background: #4338ca;
+}

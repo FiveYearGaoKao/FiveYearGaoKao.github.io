@@ -1,117 +1,571 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ordinal Dice</title>
+    <link rel="stylesheet" type="text/css" href="../styles/homepage_style.css">
+    <title>The Ordinal Dice</title>
 </head>
 <body>
-    <h2>The Ordinal Dice</h2>
-    Max Ordinal<input type="text" id="max" placeholder="1,0,0,0">
-    Ratio<input type="text" id="ratio" placeholder="0.5"><br>
-    <button id="run" onclick="run()">Roll</button><br>
-    <div id="result"></div>
-    <h2>How to use</h2>
-    The program will randomly generate an ordinal between 0 and max ordinal.<br>
-    The max ordinal should be a sequence of non-negative integers seperated by commas. 
-    Sequence a<sub>n</sub>,a<sub>n-1</sub>,...,a<sub>0</sub> represents ordinal 
-    ω<sup>n</sup>a<sub>n</sub>+ω<sup>n-1</sup>a<sub>n-1</sub>+...+ωa<sub>1</sub>+a<sub>0</sub>.<br>
-    The ratio should be a real number between 0 and 1. Higher ratio means a higher chance to get a large ordinal.<br>
-    <p>
-        Made by FiveYearGaoKao<br>
-        Version 1.0.0<br>
-    </p>
-</body>
+    <header class="page-header">
+        <h1>The Ordinal Dice</h1>
+    </header>
+
+    <main class="container">
+        <section class="card">
+            <div class="dice-result" id="result">1d0=?</div>
+        </section>
+
+        <section class="card">
+            <div class="dice-viz" id="vizWrap">
+                <canvas id="axis"></canvas>
+                <div id="labels"></div>
+            </div>
+            <div class="dice-viz-hint">Round 0 draws the fundamental sequence of &epsilon;<sub>0</sub>
+                (1, &omega;, &omega;<sup>&omega;</sup>, &hellip;). Every interval wider than 4 px is then
+                subdivided by fundamental sequences (limit) or by splitting off natural numbers (successor),
+                for at most 6 rounds, with each round's ticks drawn shorter. Labels above show the important
+                ordinals; the triangle below marks the sampled random number.</div>
+        </section>
+
+        <section class="card">
+            <div class="dice-control">
+                <label class="dice-field">Max Ordinal
+                    <input type="text" id="max" value="ω^ω·2+ω·3+5" spellcheck="false">
+                </label>
+                <label class="dice-field">Ratio
+                    <input type="range" id="ratio" min="0.01" max="0.99" step="0.01" value="0.5">
+                    <span><span id="ratioVal">0.50</span></span>
+                </label>
+            </div>
+            <button id="roll">Roll</button>
+        </section>
+
+        <section class="card">
+            <h2 class="section-title"><span class="mark mark-notes"></span>How to use</h2>
+            <p>This page rolls a random ordinal between 0 and the maximum ordinal <var>m</var>, and displays
+                <code>1d(m)=&alpha;</code>.</p>
+            <p><strong>Max Ordinal</strong> is written in Cantor normal form, e.g. <code>ω^ω·2+ω·3+5</code>,
+                <code>ω^ω^ω</code>, <code>ω·2+1</code> or <code>5</code>. <code>w</code> may be used instead of
+                <code>ω</code>, parentheses are allowed in exponents such as <code>ω^(ω+1)</code>, and the exponents
+                must be strictly decreasing (so <code>ω+ω^2</code> is invalid).</p>
+            <p><strong>Ratio</strong> (<var>p</var>) controls the distribution: a higher ratio makes large ordinals
+                more likely. The <code>Ratio</code> is also the geometric-distribution parameter used to assign a
+                sub-interval of [0,1) to every ordinal below &epsilon;<sub>0</sub>, so that each roll is a uniform
+                random number in [0, <var>pos(m)</var>).</p>
+        </section>
+    </main>
+    
+    <footer class="page-footer">
+        <p>Made by FiveYearGaoKao and DeepSeek-v4-flash &middot; Version 2.0.0 &middot;
+            <a href="../index.html">Back to Home</a></p>
+    </footer>
+
 <script>
-    function geometricDistribution(p=0.5){
-        let a=Math.random();
-        return Math.floor(Math.log(a)/Math.log(p));
+(function () {
+    "use strict";
+    function $(id) { return document.getElementById(id); }
+
+    var ord0 = [];
+    var ordOne = [[ord0, 1]];
+    var ordOmega = [[ordOne, 1]];
+    function isZero(a) { return a.length === 0; }
+
+    var p = 0.5, w0 = 0.25, nw = 0.25;
+    var m = ord0;
+    var lastRoll = null;
+
+    var posCache = new Map();
+    var wCache = new Map();
+    function clearCaches() { posCache.clear(); wCache.clear(); }
+    function setP(v) {
+        p = v;
+        // level blocks: [0,ω) takes 1-p, [L_k,L_{k+1}) takes (1-p)p^k;
+        // within [0,ω) the naturals are geometric from 0: w(n) = (1-p)^2·p^n
+        w0 = (1 - p) * (1 - p);
+        nw = 1 - p - w0;
+        clearCaches();
     }
-    function getFixedOrdinalPosition(L,p=0.5){
-        if(L.length==0){
-            return 0;
-        }else{
-            let a=L.shift();
-            let b=getFixedOrdinalPosition(L,p);
-            let xa=Math.pow(p,a);
-            return (1-xa)+(1-p)*xa*b;
-        }
+
+    function ordCompare(a, b) {
+        if (isZero(a) && isZero(b)) return 0;
+        if (isZero(a)) return -1;
+        if (isZero(b)) return 1;
+        var e = ordCompare(a[0][0], b[0][0]);
+        if (e !== 0) return e;
+        var d = a[0][1] - b[0][1];
+        if (d !== 0) return d;
+        return ordCompare(a.slice(1), b.slice(1));
     }
-    function getOrdinalPosition(L,p=0.5){
-        while(L[0]==0){
-            L.shift();
-        }
-        if(L.length==0){
-            return 0;
-        }
-        let a=L.length;
-        if(L.length>1){
-            L[0]-=1;
-        }
-        let b=getFixedOrdinalPosition(L,p);
-        let xa=Math.pow(p,a-1);
-        return (1-xa)+(1-p)*xa*b;
+
+    // ordinal is a natural number (single term with exponent 0)
+    function isNat(a) { return a.length === 1 && a[0][0].length === 0; }
+
+    // G(β) = pos(ω^β); col(β) = width of the column {ω^β·c+γ}.
+    // For natural exponents the column of a natural's successors lives in block
+    // [1,ω), so its normalization differs from the higher blocks.
+    function G(b) {
+        if (isZero(b)) return w0;
+        if (isNat(b)) return nw + pos(b);
+        return (1 - p) + p * pos(b);
     }
-    function getFixedOrd(x,dim,p=0.5){
-        if(dim==0){
-            return []; 
-        }else{
-            let a=Math.floor(Math.abs(Math.log(1-x)/Math.log(p)));
-            let xa=Math.pow(p,a);
-            let diff=Math.abs((x+xa-1)/(xa*(1-p)));
-            let b=getFixedOrd(diff,dim-1,p);
-            b.unshift(a);
-            return b;
-        }
+    function col(b) {
+        if (isNat(b)) return w(b);
+        return p * w(b);
     }
-    function getOrd(x,p=0.5){
-        let dim=Math.floor(Math.abs(Math.log(1-x)/Math.log(p)));
-        let xa=Math.pow(p,dim);
-        let diff=Math.abs((x+xa-1)/(xa*(1-p)));
-        let b=getFixedOrd(diff,dim+1,p);
-        if(dim>0){
-            b[0]+=1;
+
+    function pos(a) {
+        var k = JSON.stringify(a);
+        if (posCache.has(k)) return posCache.get(k);
+        var r;
+        if (a.length === 0) {
+            r = 0;
+        } else if (isNat(a)) {
+            r = (1 - p) * (1 - Math.pow(p, a[0][1]));
+        } else {
+            var b = a[0][0], c = a[0][1], g = a.slice(1);
+            var Gb = G(b), Cb = col(b);
+            r = Gb + Cb * (1 - Math.pow(p, c - 1)) + Cb * (1 - p) * Math.pow(p, c - 1) * (pos(g) / Gb);
         }
+        posCache.set(k, r);
+        return r;
+    }
+
+    function w(a) {
+        var k = JSON.stringify(a);
+        if (wCache.has(k)) return wCache.get(k);
+        var r;
+        if (a.length === 0) {
+            r = w0;
+        } else if (isNat(a)) {
+            r = w0 * Math.pow(p, a[0][1]);
+        } else {
+            var b = a[0][0], c = a[0][1], g = a.slice(1);
+            r = col(b) * (1 - p) * Math.pow(p, c - 1) * (w(g) / G(b));
+        }
+        wCache.set(k, r);
+        return r;
+    }
+
+    function clamp1(x) {
+        if (!(x >= 0)) return 0;
+        if (x >= 1) return 1 - 1e-12;
+        return x;
+    }
+
+    function quantile(x, depth) {
+        if (depth > 3000) return ord0;
+        x = clamp1(x);
+        if (x < w0) return ord0;
+        var k = Math.floor(Math.log(1 - x) / Math.log(p)); // level block index
+        if (k <= 0) {
+            var n = Math.floor(Math.log(1 - x / (1 - p)) / Math.log(p));
+            return [[ord0, Math.max(0, n)]];
+        }
+        var u = clamp1((x - (1 - Math.pow(p, k))) / ((1 - p) * Math.pow(p, k)));
+        var b;
+        if (k === 1) {
+            b = quantile(w0 + u * nw, depth + 1);
+        } else {
+            var a0 = 1 - Math.pow(p, k - 1), a1 = 1 - Math.pow(p, k);
+            b = quantile(a0 + u * (a1 - a0), depth + 1);
+        }
+        var Gb = G(b), Cb = col(b);
+        var y = clamp1((x - Gb) / Cb);
+        var c = Math.floor(Math.log(1 - y) / Math.log(p)) + 1;
+        if (c < 1) c = 1;
+        var uu = (y - (1 - Math.pow(p, c - 1))) / ((1 - p) * Math.pow(p, c - 1));
+        var g = quantile(clamp1(uu * Gb), depth + 1);
+        var term = [b, c];
+        return isZero(g) ? [term] : [term].concat(g);
+    }
+
+    // ---------- parser (Cantor normal form) ----------
+    function parseOrdinal(str) {
+        var s = String(str).replace(/w/g, "ω").replace(/\s+/g, "");
+        if (s === "" || s === "0") return ord0;
+        var i = 0;
+        function peek() { return s[i]; }
+        function isDigit(c) { return c !== undefined && c >= "0" && c <= "9"; }
+        function canStartExponent(c) { return isDigit(c) || c === "ω" || c === "("; }
+        function parseNum() {
+            var j = i;
+            while (j < s.length && s[j] >= "0" && s[j] <= "9") j++;
+            var n = parseInt(s.slice(i, j), 10);
+            i = j;
+            return isNaN(n) ? 0 : n;
+        }
+        function parsePowBase() {
+            var ch = peek();
+            if (isDigit(ch)) {
+                var n = parseNum();
+                return n === 0 ? ord0 : [[ord0, n]];
+            }
+            if (ch === "(") {
+                i++;
+                var e = parseExpr();
+                if (peek() === ")") i++;
+                return e.length === 0 ? ordOne : e;
+            }
+            if (ch === "ω") {
+                i++;
+                if (peek() === "^" && canStartExponent(s[i + 1])) {
+                    i++;
+                    var e2 = parsePowBase();
+                    return [[e2, 1]];
+                }
+                return ordOmega;
+            }
+            // end of input or a dangling "^": treat the exponent as 1, so ω^1 = ω
+            return ordOne;
+        }
+        function parseMonomial() {
+            var ch = peek();
+            if (isDigit(ch)) {
+                var n = parseNum();
+                if ((peek() === "·" || peek() === "*") && isDigit(s[i + 1])) { i++; n *= parseNum(); }
+                return [ord0, n];
+            }
+            if (ch === "ω") {
+                i++;
+                var c = 1;
+                if (peek() === "^" && canStartExponent(s[i + 1])) {
+                    i++;
+                    var exp = parsePowBase();
+                    if ((peek() === "·" || peek() === "*") && isDigit(s[i + 1])) { i++; c = parseNum(); }
+                    return [exp, c];
+                }
+                if ((peek() === "·" || peek() === "*") && isDigit(s[i + 1])) { i++; c = parseNum(); }
+                return [ordOne, c];
+            }
+            // unrecognized character or end of input: a zero term, dropped by parseExpr
+            return [ord0, 0];
+        }
+        function parseExpr() {
+            var pairs = [parseMonomial()];
+            while (peek() === "+") { i++; pairs.push(parseMonomial()); }
+            var cnf = [];
+            for (var t = 0; t < pairs.length; t++) {
+                var b = pairs[t][0], c = pairs[t][1];
+                if (c === 0) continue;
+                if (cnf.length === 0) { cnf.push([b, c]); continue; }
+                var cmp = ordCompare(b, cnf[cnf.length - 1][0]);
+                if (cmp > 0) throw new Error("exponents must be strictly decreasing");
+                if (cmp === 0) cnf[cnf.length - 1][1] += c;
+                else cnf.push([b, c]);
+            }
+            return cnf;
+        }
+        return parseExpr();
+    }
+
+    // ---------- display ----------
+    function ordToString(a) {
+        if (a.length === 0) return "0";
+        var parts = [];
+        for (var i = 0; i < a.length; i++) {
+            var b = a[i][0], c = a[i][1];
+            if (b.length === 0) { parts.push(String(c)); continue; }
+            var isOne = b.length === 1 && b[0][0].length === 0 && b[0][1] === 1;
+            var s = isOne ? "ω" : "ω<sup>" + ordToString(b) + "</sup>";
+            if (c > 1) s += "·" + c;
+            parts.push(s);
+        }
+        return parts.join("+");
+    }
+
+    // ---------- fundamental sequences (Cantor normal form) ----------
+    // β is a limit ordinal iff its last exponent is nonzero.
+    function isLimit(x) {
+        return x.length > 0 && x[x.length - 1][0].length !== 0;
+    }
+
+    // predecessor of a nonzero successor ordinal (trailing natural part minus one)
+    function pred(x) {
+        var b = x.slice();
+        var last = b[b.length - 1];
+        if (last[1] > 1) { b[b.length - 1] = [ord0, last[1] - 1]; return b; }
+        return b.slice(0, -1);
+    }
+
+    // nth term of the fundamental sequence of a limit ordinal β, CNF convention:
+    //   last term ω^e·c with e = δ+1 successor: β[n] = ... + ω^e·(c-1) + ω^δ·(n+1)
+    //   last term ω^e·c with e limit:           β[n] = ... + ω^e·(c-1) + ω^(e[n])
+    function fundSeq(x, n) {
+        var last = x[x.length - 1], e = last[0], c = last[1];
+        var prefix = x.slice(0, -1);
+        if (c > 1) prefix.push([e, c - 1]);
+        if (isLimit(e)) prefix.push([fundSeq(e, n), 1]);
+        else prefix.push([pred(e), n]);
+        return prefix;
+    }
+
+    // successor of an ordinal: append or increment the trailing natural part
+    function succ(x) {
+        if (x.length === 0) return [[ord0, 1]];
+        var b = x.slice();
+        var last = b[b.length - 1];
+        if (last[0].length === 0) { b[b.length - 1] = [ord0, last[1] + 1]; return b; }
+        b.push([ord0, 1]);
         return b;
     }
-    function ordtoString(L){
-        let n=L.length-1;
-        if(L.length==0){
-            return '0';
-        }else if(L.length==1){
-            return L[0].toString();
-        }else{
-            let a=L.shift();
-            let b=ordtoString(L);
-            if(a==0){
-                return b;
-            }else{
-                let res='ω';
-                if(n>1){
-                    res+=('^'+n.toString());
-                }
-                if(a>1){
-                    res+=('*'+a.toString());
-                }
-                if(b=='0'){
-                    return res;
-                }else{
-                    return res+'+'+b;
-                }
+
+    // division points strictly inside (α, β):
+    //   β limit     -> fundamental-sequence terms β[n] until the tail [β[n], β) < minFrac
+    //   β successor -> β = γ + k, points γ, γ+1, ..., γ+k-1
+    function subdivisionPoints(alpha, beta, minFrac, maxPts) {
+        var pts = [];
+        if (isLimit(beta)) {
+            var n = 1;
+            var cap = maxPts + 8;
+            while (n < cap) {
+                var t = fundSeq(beta, n);
+                if (ordCompare(t, beta) >= 0) break;
+                if (ordCompare(t, alpha) > 0) pts.push(t);
+                if (pos(beta) - pos(t) < minFrac) break;
+                n++;
+                if (pts.length >= maxPts) break;
+            }
+        } else {
+            var last = beta[beta.length - 1];
+            var gamma = beta.slice(0, -1);
+            var k = last[1];
+            var cur = gamma;
+            for (var i = 0; i < k; i++) {
+                if (ordCompare(cur, alpha) > 0 && ordCompare(cur, beta) < 0) pts.push(cur);
+                cur = succ(cur);
+                if (pts.length >= maxPts) break;
             }
         }
+        return pts;
     }
-    function run(){
-        let L=(document.getElementById("max").value||"1,0,0,0").split(',').map(x=>parseInt(x));
-        let p=parseFloat(document.getElementById("ratio").value||"0.5");
-        let maxOrd=ordtoString(L.slice());
-        p=p>1?1:p<0?0:p;
-        let r=Math.random();
-        let maxV=getOrdinalPosition(L,p);
-        let res=getOrd(maxV*r,p);
-        document.getElementById("result").innerHTML="1d("+maxOrd+")="+ordtoString(res);
-        return 0;
+
+    // initial division points: 0, 1, ω, ω^ω, ..., and m as the right boundary
+    function collectInitialPoints() {
+        var pts = [ord0, ordOne];
+        var t = ordOne;
+        while (true) {
+            var next = [[t, 1]];
+            if (ordCompare(next, m) > 0) break;
+            pts.push(next);
+            t = next;
+        }
+        if (ordCompare(pts[pts.length - 1], m) !== 0) pts.push(m);
+        return pts;
     }
-    window.onload=run;
+
+    // ---------- visualization ----------
+    var canvas = $("axis");
+    var ctx = canvas.getContext("2d");
+    var labelsDiv = $("labels");
+    var MARGIN = 14;
+    var AXIS_Y = 50;
+    var TICK_MIN_PX = 4;
+    var MAX_ROUND = 6;
+
+    // tick total length shrinks each round, starting at 16 px (8 up + 8 down)
+    function tickLen(round) {
+        return Math.max(4, 16 - 2 * round);
+    }
+
+    function drawTick(x, len) {
+        ctx.beginPath();
+        ctx.moveTo(x, AXIS_Y - len / 2);
+        ctx.lineTo(x, AXIS_Y + len / 2);
+        ctx.stroke();
+    }
+
+    function toX(v) {
+        var W = canvas.clientWidth;
+        return MARGIN + (v / pos(m)) * (W - 2 * MARGIN);
+    }
+
+    function draw() {
+        var W = canvas.clientWidth;
+        var H = 100;
+        var dpr = window.devicePixelRatio || 1;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        labelsDiv.innerHTML = "";
+
+        if (!m || isZero(m)) return;
+
+        var pm = pos(m);
+
+        // axis line
+        ctx.strokeStyle = "#9ca3af";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(MARGIN, AXIS_Y);
+        ctx.lineTo(W - MARGIN, AXIS_Y);
+        ctx.stroke();
+        // end caps
+        ctx.beginPath();
+        ctx.moveTo(MARGIN, AXIS_Y - 4); ctx.lineTo(MARGIN, AXIS_Y + 4);
+        ctx.moveTo(W - MARGIN, AXIS_Y - 4); ctx.lineTo(W - MARGIN, AXIS_Y + 4);
+        ctx.stroke();
+
+        // ticks: round 0 = fundamental sequence of ε₀ (1, ω, ω^ω, ...),
+        // then subdivide every interval wider than TICK_MIN_PX by fundamental
+        // sequences (limit right endpoint) or by splitting off naturals
+        // (successor right endpoint), up to MAX_ROUND iterations.
+        // Each round's division points are also recorded as label candidates.
+        var minFrac = (TICK_MIN_PX * pm) / (W - 2 * MARGIN);
+        ctx.strokeStyle = "#6b7280";
+
+        var labelCands = [];
+        for (var r = 0; r <= MAX_ROUND; r++) labelCands[r] = [];
+
+        var initPts = collectInitialPoints();
+        for (var r = 0; r < initPts.length; r++) {
+            if (ordCompare(initPts[r], m) === 0) continue;
+            drawTick(toX(pos(initPts[r])), tickLen(0));
+            labelCands[0].push(initPts[r]);
+        }
+
+        var intervals = [];
+        for (var r = 0; r < initPts.length - 1; r++) {
+            var a0 = initPts[r], b0 = initPts[r + 1];
+            if (ordCompare(a0, b0) < 0) intervals.push([a0, b0]);
+        }
+
+        for (var round = 1; round <= MAX_ROUND; round++) {
+            var next = [];
+            for (var r = 0; r < intervals.length; r++) {
+                var iv = intervals[r];
+                var alpha = iv[0], beta = iv[1];
+                if (pos(beta) - pos(alpha) < minFrac) { next.push(iv); continue; }
+                var div = subdivisionPoints(alpha, beta, minFrac, 300);
+                if (div.length === 0) { next.push(iv); continue; }
+                for (var r2 = 0; r2 < div.length; r2++) {
+                    drawTick(toX(pos(div[r2])), tickLen(round));
+                    labelCands[round].push(div[r2]);
+                }
+                var all = [alpha].concat(div, [beta]);
+                for (var r3 = 0; r3 < all.length - 1; r3++) {
+                    if (ordCompare(all[r3], all[r3 + 1]) < 0) next.push([all[r3], all[r3 + 1]]);
+                }
+            }
+            intervals = next;
+        }
+
+        renderLabels(W, labelCands);
+
+        renderLabels(W, labelCands);
+
+        // triangle marking the sampled random number
+        if (lastRoll) {
+            var tx = toX(lastRoll.x);
+            ctx.fillStyle = "#ef4444";
+            ctx.beginPath();
+            ctx.moveTo(tx, AXIS_Y + 10);
+            ctx.lineTo(tx - 7, AXIS_Y + 24);
+            ctx.lineTo(tx + 7, AXIS_Y + 24);
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+
+    // Labels above the axis. Candidates are visited by subdivision round
+    // (round 0 = the fundamental sequence 1, ω, ω^ω, ..., then finer rounds),
+    // so simpler ordinals are preferred. Each label is placed only when the
+    // space around it is free; m is placed last.
+    function renderLabels(W, labelCands) {
+        labelsDiv.innerHTML = "";
+        var GAP = 8;
+        var placed = [];
+        function fits(box) {
+            for (var i = 0; i < placed.length; i++) {
+                if (box[1] + GAP > placed[i][0] && box[0] - GAP < placed[i][1]) return false;
+            }
+            return true;
+        }
+        for (var round = 0; round <= MAX_ROUND; round++) {
+            var list = labelCands[round];
+            if (!list) continue;
+            for (var i = 0; i < list.length; i++) {
+                var o = list[i];
+                if (ordCompare(o, m) === 0) continue;
+                placeLabel(o, toX(pos(o)), W, placed, fits);
+            }
+            if (round === 0) placeLabel(m, toX(pos(m)), W, placed, fits);
+        }
+    }
+
+    function placeLabel(o, xc, W, placed, fits) {
+        var span = document.createElement("span");
+        span.className = "axis-label";
+        span.innerHTML = ordToString(o);
+        labelsDiv.appendChild(span);
+        var w = span.offsetWidth || 50;
+        var box;
+        if (xc < 30) {
+            span.style.left = "0px";
+            span.style.transform = "translateX(0)";
+            box = [0, w];
+        } else if (xc > W - 30) {
+            span.style.left = (W - 2) + "px";
+            span.style.transform = "translateX(-100%)";
+            box = [W - w, W];
+        } else {
+            span.style.left = xc + "px";
+            span.style.transform = "translateX(-50%)";
+            box = [xc - w / 2, xc + w / 2];
+        }
+        if (!fits(box)) {
+            span.remove();
+            return;
+        }
+        placed.push(box);
+    }
+
+    // ---------- events ----------
+    function onMaxChange() {
+        lastRoll = null;
+        try {
+            m = parseOrdinal($("max").value);
+            $("result").innerHTML = "1d(" + ordToString(m) + ")=?";
+        } catch (e) {
+            m = null;
+            $("result").innerHTML = "Invalid input";
+        }
+        draw();
+    }
+
+    function onRatioChange() {
+        setP(parseFloat($("ratio").value));
+        $("ratioVal").textContent = p.toFixed(2);
+        lastRoll = null;
+        if (m) $("result").innerHTML = "1d(" + ordToString(m) + ")=?";
+        draw();
+    }
+
+    function roll() {
+        if (!m || isZero(m)) {
+            lastRoll = null;
+            $("result").innerHTML = isZero(m) ? "1d0=0" : "Invalid input";
+            draw();
+            return;
+        }
+        var r = Math.random() * pos(m);
+        var a = quantile(r);
+        lastRoll = { x: r };
+        $("result").innerHTML = "1d(" + ordToString(m) + ")=" + ordToString(a);
+        draw();
+    }
+
+    $("max").addEventListener("input", onMaxChange);
+    $("ratio").addEventListener("input", onRatioChange);
+    $("roll").addEventListener("click", roll);
+    window.addEventListener("resize", draw);
+
+    m = parseOrdinal($("max").value);
+    setP(parseFloat($("ratio").value));
+    $("ratioVal").textContent = p.toFixed(2);
+    onMaxChange();
+})();
 </script>
+</body>
 </html>

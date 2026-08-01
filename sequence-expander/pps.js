@@ -24,7 +24,7 @@ notations.push(
         name: 'Parentes Predecessor Sequence',
         author:'318\'4',
         abbr:'PPS',
-        description: '"PPS":The PPS Mode(The limit is unknown).',
+        description: '"PPS":The PPS Mode(The limit is ζ_0).',
         expand(a, fs) { return expandPPS(a, fs, true) },
         expandLimit(fs) {
             let res = []
