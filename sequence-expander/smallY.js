@@ -234,3 +234,17 @@ notations.push(
         expandLimit(fs, _) { return [1, randInt(fs+1,3*fs+3)] },
     }
 )
+
+let normalizePrSS = (arr) =>(
+  arr.length <= 1? arr:(arr + ",")
+        .split(arr[0]+',')
+        .slice(1)
+        .map((x) => JSON.parse(("[" + x + "]").replace(",]", "]")))
+        .map((x) => [arr[0], ...normalizePrSS(x)])
+        .reduceRight(
+          (y, x) =>
+            ((p, q) => q.findIndex((n, i) => n > (p[i] ?? -Infinity)) >= 0)(x,y[0])
+              ? y : [x, ...y],
+          [[]],
+        ).flat()
+);
